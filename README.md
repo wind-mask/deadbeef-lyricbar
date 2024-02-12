@@ -44,7 +44,7 @@ sudo cp *.h /usr/local/include/deadbeef
 ## 编译deadbeef-lyricbar
 
 ```shell
-git clone https://github.com/loskutov/deadbeef-lyricbar.git
+git clone https://github.com/zhanxh/deadbeef-lyricbar.git
 ```
 
 ```shell
