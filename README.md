@@ -1,41 +1,161 @@
-Based on loskutov https://github.com/loskutov/deadbeef-lyricbar
-
-# DeaDBeeF Lyricbar Plugin
-Plugin for [DeaDBeeF audio player](https://github.com/DeaDBeeF-Player/deadbeef) that fetches and shows the song’s synclyrics using various website, also from metadata or lrc/txt file (same name on same folder as track).
-
-![GIF](https://github.com/AsVHEn/deadbeef-lyricbar/assets/4272271/2506a8cb-2c94-4a73-99c7-33b7aa22e26e)
+# deadbeef-lyricbar 优化
 
 
-## Dependencies
-To use this plugin, you need to have [gtkmm](http://www.gtkmm.org/) and [gtk3](https://www.gtk.org/) installed.
+## 效果展示
 
-You need deadbeef.h file to build this plugin. The file /usr/include/deadbeef/deadbeef.h should've been installed with the player itself. If not -- look for deadbeef-plugin-dev package, or something like this. Or get the file from a source tarball.
+![效果展示](https://github.com/zhanxh/deadbeef-lyricbar/deadbeef-show.png)
 
-## Installation
-Just download compiled file _ddb_lyricbar_gtk3.so_, and copy it to ~/.local/lib/deadbeef or:
+## 源码
+[代码](https://github.com/loskutov/deadbeef-lyricbar)
 
-Clone this repository and perform the following:
-```sh
-make [gtk3]
-sudo cp *.so /usr/lib/deadbeef # depends on where deadbeef is installed
-# OR, to install for the current user only
-mkdir -p ~/.local/lib/deadbeef && cp *.so ~/.local/lib/deadbeef
+[改良版](https://github.com/AsVHEn/deadbeef-lyricbar)
+
+## 编译依赖
+
+```shell
+
+sudo apt-get install libgtkmm-3.0-dev
+sudo apt-get install libcurl5-openssl-dev
+
 ```
 
-## Usage
-Activate Design Mode (View → Design mode) and add Lyricbar somewhere. Disable Design Mode back and edit appareance if you want in config options:
+## 下载拷贝deadbeef头文件
 
-![Config](https://github.com/AsVHEn/deadbeef-lyricbar/assets/4272271/5cbf1cba-9eff-4694-ad34-d814b8abe84f)
+下载
+```shell
+git clone https://github.com/DeaDBeeF-Player/deadbeef.git
+```
 
-Lyrics will be stored on tags "LYRICS" for synced, and "UNSYNCEDLYRICS" for non-sync. SYLT tags will be removed if exists.
 
-Automatic download if no tag or file is found. Also you can manually search for lyrics with a right-click on plugin. To be able to get lyrics from Spoti-fy you will need to input your account's SP-DC on Edit/Preferences/Plugins/Lyricbar (One easy way to know your SP-DC: Install [Cookie-editor](https://cookie-editor.com/) browser extension and login into your account).
-Same to use AZlyrics with the last part of a manual search URL.
-![Search](https://github.com/AsVHEn/deadbeef-lyricbar/assets/4272271/03b1ade0-11da-4c69-b85b-cb3f26ed8b65)
+```shell
+# 拷贝头文件
+cd deadbeef/include
+sudo cp -r deadbeef /usr/local/include
+# 拷贝GTKui头文件
+cd deadbeef/plugins/gtkui
+sudo cp *.h /usr/local/include/deadbeef 
+```
 
-There is also a window to edit lyrics.
-![Edit](https://github.com/AsVHEn/deadbeef-lyricbar/assets/4272271/5e2c30b6-e21b-483e-abe6-c0d12ed13d84)
+## 编译deadbeef-lyricbar
 
-In addition, if you're not satisfied with lyrics providers you can help adding another ones :D.
+```shell
+git clone https://github.com/loskutov/deadbeef-lyricbar.git
+```
 
+```shell
+make gtk3
+```
+### 基于**改良版**修改
+
+```C++
+#include <sstream>
+```
+
+
+```c++
+
+// Function to parse synced lyrics:
+struct sync lyric2vector( string lyrics){
+	//cout << "lyric2vector" "\n";
+	vector<string> synclyrics;
+	vector<double> position;
+	string line;
+	int squarebracket;
+	int repeats = 0; 
+	//If last character is a ] add an space to have same number of lyrics and positions.
+	if (lyrics.at(lyrics.length() - 1) == ']'){
+		lyrics.push_back(' ');
+	}
+	if (lyrics.length() <= 3){
+		position.push_back(0);
+		struct sync  emptylyrics = bubbleSort(position, synclyrics, 1);
+		return emptylyrics;
+	}
+
+	for (unsigned i=0; i < lyrics.length() - 3; ++i){
+		if ((lyrics.at(i) == '[') && (lyrics.at(i+1) == '0') && (lyrics.at(i+3) == ':') ) {
+  			++repeats;
+			position.push_back ((lyrics.at(i + 1) - 48)*600 + (lyrics.at(i + 2) - 48)*60 + (lyrics.at(i + 4) - 48)*10 + (lyrics.at(i + 5) - 48) + (lyrics.at(i + 7) - 48)*0.1 + (lyrics.at(i + 8) - 48)*0.01);
+			if ((lyrics.length() > i + 10) && (lyrics.at(i+10) != '[')) {
+				line = lyrics.substr(i + 10, lyrics.length() - i - 10);
+				squarebracket = line.find_first_of('[');
+				if (((lyrics.at(i+8 + squarebracket)) != '\n') && (lyrics.at(i+8 + squarebracket)) != '\r'){
+					if(lyrics.at(i+10) == ']') // do兼容毫秒3位
+						line = lyrics.substr(i + 11, squarebracket-1);
+					else
+						line = lyrics.substr(i + 10, squarebracket-1);
+				}
+				else {
+					if(lyrics.at(i+10) == ']') // do兼容毫秒3位
+						line = lyrics.substr(i + 11, squarebracket-1);
+					else
+						line = lyrics.substr(i + 10, squarebracket-2);
+				}
+				++repeats;
+				while (--repeats ) {
+					synclyrics.push_back (line);
+				}
+					
+			}
+		}
+	}
+
+	int n = position.size();
+	struct sync  goodlyrics = bubbleSort(position, synclyrics, n);
+
+// For debug:
+//	for (auto k = goodlyrics.position.begin(); k != goodlyrics.position.end(); ++k)
+//    	cout << *k << " ";
+//
+//	for (auto i = goodlyrics.synclyrics.begin(); i != goodlyrics.synclyrics.end(); ++i)
+//    	cout << *i << '\n';
+	
+	return goodlyrics;
+}
+
+```
+
+```C++
+
+struct parsed_lyrics get_lyrics_next_to_file(DB_playItem_t *track) {
+	bool sync = false;
+	ifstream infile;
+	string lyrics;
+	std::stringstream buffer;
+
+	deadbeef->pl_lock();
+	const char *track_location = deadbeef->pl_find_meta(track, ":URI");
+	deadbeef->pl_unlock();
+	string trackstring = track_location;
+	size_t lastindex = trackstring.find_last_of(".");
+	trackstring = trackstring.substr(0, lastindex);
+	
+	std::cout << "track_location: " << track_location << std::endl;
+	std::cout << "trackstring: " << trackstring << std::endl;
+
+	infile.open(trackstring + ".lrc", ios_base::app); //ios_base::trunc
+	if(infile.is_open()){
+		std::stringstream buffer;
+		buffer << infile.rdbuf();
+		lyrics = buffer.str();
+		sync = true;	
+		std::cout << "file exist : " << trackstring << ".lrc" << std::endl;
+		std::cout << "lyrics1: " << lyrics << std::endl;
+	}
+	else
+	{
+		infile.open(trackstring + ".txt", ios_base::app); //ios_base::trunc
+		if(infile.is_open()){
+			std::stringstream buffer;
+			buffer << infile.rdbuf();
+			lyrics = buffer.str();
+			std::cout << "lyrics2: "<< lyrics << std::endl;
+		}
+		else{
+			std::cout << "file not exist : " << trackstring << ".txt" << std::endl;
+		}
+	}
+	return{lyrics, sync};	
+}
+```
 
