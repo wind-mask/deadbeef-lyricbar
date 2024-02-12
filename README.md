@@ -51,6 +51,7 @@ git clone https://github.com/loskutov/deadbeef-lyricbar.git
 make gtk3
 ```
 ### 基于**改良版**修改
+> utils.cpp 修改点
 
 ```C++
 #include <sstream>
