@@ -3,12 +3,17 @@
 
 ## 效果展示
 
-![效果展示](https://github.com/zhanxh/deadbeef-lyricbar/deadbeef-show.png)
+![效果展示](https://github.com/zhanxh/deadbeef-lyricbar/blob/master/deadbeef-show.png)
 
 ## 源码
 [代码](https://github.com/loskutov/deadbeef-lyricbar)
 
 [改良版](https://github.com/AsVHEn/deadbeef-lyricbar)
+
+
+## 工作环境
+
+> Ubuntu 22.04.3 LTS
 
 ## 编译依赖
 
