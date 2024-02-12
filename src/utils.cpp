@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <thread>
 #include <vector>
 #include <string>
@@ -126,10 +127,16 @@ struct sync lyric2vector( string lyrics){
 				line = lyrics.substr(i + 10, lyrics.length() - i - 10);
 				squarebracket = line.find_first_of('[');
 				if (((lyrics.at(i+8 + squarebracket)) != '\n') && (lyrics.at(i+8 + squarebracket)) != '\r'){
-				line = lyrics.substr(i + 10, squarebracket-1);
+					if(lyrics.at(i+10) == ']')
+						line = lyrics.substr(i + 11, squarebracket-1);
+					else
+						line = lyrics.substr(i + 10, squarebracket-1);
 				}
 				else {
-					line = lyrics.substr(i + 10, squarebracket-2);
+					if(lyrics.at(i+10) == ']')
+						line = lyrics.substr(i + 11, squarebracket-1);
+					else
+						line = lyrics.substr(i + 10, squarebracket-2);
 				}
 				++repeats;
 				while (--repeats ) {
@@ -398,6 +405,7 @@ struct parsed_lyrics get_lyrics_next_to_file(DB_playItem_t *track) {
 	bool sync = false;
 	ifstream infile;
 	string lyrics;
+	std::stringstream buffer;
 
 	deadbeef->pl_lock();
 	const char *track_location = deadbeef->pl_find_meta(track, ":URI");
@@ -405,18 +413,31 @@ struct parsed_lyrics get_lyrics_next_to_file(DB_playItem_t *track) {
 	string trackstring = track_location;
 	size_t lastindex = trackstring.find_last_of(".");
 	trackstring = trackstring.substr(0, lastindex);
+	
+	//std::cout << "track_location: " << track_location << std::endl;
+	//std::cout << "trackstring: " << trackstring << std::endl;
 
-	infile.open(trackstring + ".lrc", ios_base::trunc); //ios_base::app
+	infile.open(trackstring + ".lrc", ios_base::app); //ios_base::app
 	if(infile.is_open()){
-		lyrics = infile.get();
+		std::stringstream buffer;
+		buffer << infile.rdbuf();
+		lyrics = buffer.str();
 		sync = true;	
+		//std::cout << "file exist : " << trackstring << ".lrc" << std::endl;
+		//std::cout << "lyrics1: " << lyrics << std::endl;
 	}
-	else{
-		infile.open(trackstring + ".txt", ios_base::trunc); //ios_base::app
-	}
-
-	if(infile.is_open()){
-		lyrics = infile.get();
+	else
+	{
+		infile.open(trackstring + ".txt", ios_base::app); //ios_base::app
+		if(infile.is_open()){
+			std::stringstream buffer;
+			buffer << infile.rdbuf();
+			lyrics = buffer.str();
+			std::cout << "lyrics2: "<< lyrics << std::endl;
+		}
+		else{
+			std::cout << "file not exist : " << trackstring << ".txt" << std::endl;
+		}
 	}
 	return{lyrics, sync};	
 }
