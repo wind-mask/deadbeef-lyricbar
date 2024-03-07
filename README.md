@@ -31,6 +31,15 @@ sudo apt-get install libcurl5-openssl-dev
 git clone https://github.com/DeaDBeeF-Player/deadbeef.git
 ```
 
+然后
+```
+apt-get install autoconf automake libtool autopoin
+
+./autogen.sh
+
+./Configre
+```
+
 
 ```shell
 # 拷贝头文件
