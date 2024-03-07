@@ -20,8 +20,9 @@
 ```shell
 
 sudo apt-get install libgtkmm-3.0-dev
-sudo apt-get install libcurl5-openssl-dev
-
+sudo apt-get install libcurl5-openssl-dev //或 sudo apt install libcurl4-openssl-dev
+sudo apt install libtag1-dev
+sudo apt-get install autoconf automake libtool autopoint 
 ```
 
 ## 下载拷贝deadbeef头文件
