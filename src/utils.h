@@ -29,18 +29,18 @@ struct parsed_lyrics{
 };
 
 struct sync{
-	vector<string> synclyrics;
+	vector<std::string> synclyrics;
 	vector<double> position;
 };
 
 struct chopped{
-	string past;
-	string present;
-	string future;
+	std::string past;
+	std::string present;
+	std::string future;
 };
 
 
-string specialforplus(const char* text);
+std::string specialforplus(const char* text);
 
 bool is_playing(DB_playItem_t *track);
 
@@ -52,13 +52,15 @@ void save_meta_data(DB_playItem_t *playing_song, struct parsed_lyrics lyrics);
 
 int mkpath(const std::string &name, mode_t mode);
 
-string replace_string(std::string subject, const std::string& search, const std::string& replace);
+std::string replace_string(std::string subject, const std::string& search, const std::string& replace);
 
-vector<string> split(string s, string delimiter);
+vector<std::string> split(std::string s, std::string delimiter);
 
 size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp);
 
-string text_downloader(curl_slist *slist, string url);
+std::string text_downloader(curl_slist *slist, std::string url);
+
+std::string url_encode(const std::string& url);
 
 extern "C" {
 #endif // __cplusplus
