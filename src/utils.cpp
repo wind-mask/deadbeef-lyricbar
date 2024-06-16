@@ -380,6 +380,24 @@ string text_downloader(curl_slist *slist, string url) {
 	return readBuffer;
 }
 
+std::string url_encode(const std::string& url) {
+    std::string encoded;
+    for (unsigned char c : url) {
+        // Perform URL encoding based on RFC 3986
+        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
+            encoded.push_back(c); // Keep alphanumeric characters, '-', '_', '.', '~'
+        }
+        else {
+            // Encode other characters as %xx
+            encoded.append("%");
+            char buffer[8] = {}; // 存储格式化的字符串，包括结尾的'\0'
+            sprintf(buffer, "%02X", c); // 填充两位十六进制数，不足的前面补0
+            encoded.append(buffer);
+        }
+    }
+    return encoded;
+}
+
 //---------------------------------------------------------------------
 //************ /Share functions of lyrics downloaders. ****************
 //---------------------------------------------------------------------
