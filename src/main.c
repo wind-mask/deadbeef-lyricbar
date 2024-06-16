@@ -22,10 +22,10 @@ static gboolean _pop (GtkTextView *text_view, GtkWidget *popup, gpointer user_da
 	GtkWidget *popup_search;
 	GtkWidget *popup_edit;
 
-	if (strcmp(setlocale(LC_CTYPE, NULL) , "es_ES.UTF-8") == 0) {
-		popup_config = gtk_menu_item_new_with_label("Configurar");
-		popup_search = gtk_menu_item_new_with_label("Buscar");
-		popup_edit = gtk_menu_item_new_with_label("Editar");
+	if (strcmp(setlocale(LC_CTYPE, NULL) , "zh_CN.UTF-8") == 0) {
+		popup_config = gtk_menu_item_new_with_label("设置");
+		popup_search = gtk_menu_item_new_with_label("搜索");
+		popup_edit = gtk_menu_item_new_with_label("编辑");
 	}
 	else {
 		popup_config = gtk_menu_item_new_with_label("Config");

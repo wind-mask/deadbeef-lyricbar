@@ -234,18 +234,21 @@ int on_button_config (GtkMenuItem *menuitem, gpointer user_data) {
 
 
 //	Translation:
-	if (strcmp(locale_lang , "es_ES.UTF-8") != 0) {
-		gtk_label_set_label(Background_color_label, "Background color: ");
-		gtk_label_set_label(Text_color_label, "Text color: ");
-		gtk_label_set_label(Highlight_color_label, "Highlight color: ");
-		gtk_label_set_label(Align_label, "Align: ");
-		gtk_label_set_label(Edge_label, "Edge: ");
-		gtk_label_set_label(Highlight_line_label, "Highlight line height %: ");
-		gtk_button_set_label(GTK_BUTTON(Check_bold), "Bold");
-		gtk_button_set_label(GTK_BUTTON(Align_left), "Left");
-		gtk_button_set_label(GTK_BUTTON(Align_center), "Center");
-		gtk_button_set_label(GTK_BUTTON(Align_right), "Right");
-		gtk_window_set_title(ConfigWindow, "Config");
+	if (strcmp(locale_lang , "zh_CN.UTF-8") == 0) {
+		gtk_label_set_label(Background_color_label, "背景颜色: ");
+		gtk_label_set_label(Text_color_label, "文本颜色: ");
+		gtk_label_set_label(Highlight_color_label, "高亮颜色: ");
+		gtk_label_set_label(Align_label, "对齐方式: ");
+		gtk_label_set_label(Edge_label, "边距: ");
+		gtk_label_set_label(Highlight_line_label, "高亮行行高 %: ");
+		gtk_button_set_label(GTK_BUTTON(Check_bold), "加粗");
+		gtk_button_set_label(GTK_BUTTON(Align_left), "左对齐");
+		gtk_button_set_label(GTK_BUTTON(Align_center), "居中");
+		gtk_button_set_label(GTK_BUTTON(Align_right), "右对齐");
+		gtk_button_set_label(GTK_BUTTON(OK), "确认");
+		gtk_button_set_label(GTK_BUTTON(Cancel), "取消");
+		gtk_button_set_label(GTK_BUTTON(Apply), "应用");
+		gtk_window_set_title(ConfigWindow, "设置");
 	}
 
 	gtk_radio_button_join_group(Align_center, Align_left);
@@ -461,17 +464,20 @@ int on_button_search (GtkMenuItem *menuitem, gpointer user_data) {
 	Search				= GTK_BUTTON(gtk_builder_get_object(builder, "Search"));
 
 //	Translation:
-	if (strcmp(locale_lang , "es_ES.UTF-8") != 0) {
-		gtk_label_set_text (PreViewLyrics, (const gchar* ) "Lyrics preview");
-		gtk_label_set_label(Artist_label, "Artist: ");
-		gtk_label_set_label(Song_label, "Song: ");
-		gtk_label_set_label(Album_label, "Album ");
-		gtk_button_set_label(GTK_BUTTON(Search), "Search");
-		gtk_window_set_title(SearchWindow, "Search");
-		gtk_tree_view_column_set_title(Column_artist, "Artist");
-		gtk_tree_view_column_set_title(Column_song, "Song");
-		gtk_tree_view_column_set_title(Column_album, "Album");
-		gtk_tree_view_column_set_title(Column_source, "Source");	}
+	if (strcmp(locale_lang , "zh_CN.UTF-8") == 0) {
+		gtk_label_set_text (PreViewLyrics, (const gchar* ) "歌词预览");
+		gtk_label_set_label(Artist_label, "歌手: ");
+		gtk_label_set_label(Song_label, "歌名: ");
+		gtk_label_set_label(Album_label, "专辑: ");
+		gtk_button_set_label(GTK_BUTTON(Search), "搜索");
+		gtk_window_set_title(SearchWindow, "搜索");
+		gtk_tree_view_column_set_title(Column_artist, "歌手");
+		gtk_tree_view_column_set_title(Column_song, "歌名");
+		gtk_tree_view_column_set_title(Column_album, "专辑");
+		gtk_tree_view_column_set_title(Column_source, "搜索源");
+		gtk_button_set_label(GTK_BUTTON(Save), "保存");
+		gtk_button_set_label(GTK_BUTTON(Exit), "退出");
+	}
 	else{
 		gtk_label_set_text (PreViewLyrics, (const gchar* ) "Ventana de previsualización de las letras");
 	}
@@ -711,7 +717,12 @@ static gboolean on_timeout (gpointer user_data) {
 	GtkLabel *label = GTK_LABEL(user_data);
 	gchar *text = actual_track_time();
 	string playback_time = text;
-	playback_time = "Playback: " + playback_time + " ";
+	if (strcmp(locale_lang , "zh_CN.UTF-8") == 0) {
+		playback_time = "播放: " + playback_time + " ";
+	} else {
+		playback_time = "Playback: " + playback_time + " ";
+	}
+	
 	gtk_label_set_label (label, playback_time.c_str());
 	g_free (text);
 
@@ -762,19 +773,24 @@ int on_button_edit (GtkMenuItem *menuitem, gpointer user_data) {
 	Edit_apply				= GTK_BUTTON(gtk_builder_get_object(builder, "Edit_apply"));
 	Edit_cancel				= GTK_BUTTON(gtk_builder_get_object(builder, "Edit_cancel"));
 	Edit_OK					= GTK_BUTTON(gtk_builder_get_object(builder, "Edit_OK"));
-	Sync_label				= GTK_LABEL(gtk_builder_get_object(builder, "Highlight_line_label"));
-	Sync_or_not_label		= GTK_LABEL(gtk_builder_get_object(builder, "Highlight_line_label"));
+	Sync_label				= GTK_LABEL(gtk_builder_get_object(builder, "Sync_label"));
+	Sync_or_not_label		= GTK_LABEL(gtk_builder_get_object(builder, "Sync_or_not_label"));
 
 //	Translation:
-	if (strcmp(locale_lang , "es_ES.UTF-8") != 0) {
-		gtk_label_set_label(Sync_label, "Syncronization ");
-		gtk_label_set_label(Sync_or_not_label, "Sync or not ");
-		gtk_button_set_label(GTK_BUTTON(Plus_time), "+ 0.1 seconds");
-		gtk_button_set_label(GTK_BUTTON(Minus_time), "- 0.1 seconds");
-		gtk_button_set_label(GTK_BUTTON(Apply_offset), "Apply offset");
-		gtk_button_set_label(GTK_BUTTON(Insert_timestamp), "Insert timestamp");
-		gtk_button_set_label(GTK_BUTTON(Check_sync), "Synced lyrics");
-		gtk_window_set_title(EditWindow, "Edit");
+	if (strcmp(locale_lang , "zh_CN.UTF-8") == 0) {
+		gtk_label_set_label(Sync_label, "同步 ");
+		gtk_label_set_label(Sync_or_not_label, "是否同步 ");
+		gtk_label_set_label (Playback_time, "播放: 00:00.00");
+		gtk_button_set_label(GTK_BUTTON(Pause_play), "播放/暂停");
+		gtk_button_set_label(GTK_BUTTON(Plus_time), "+ 0.1 秒");
+		gtk_button_set_label(GTK_BUTTON(Minus_time), "- 0.1 秒");
+		gtk_button_set_label(GTK_BUTTON(Apply_offset), "应用偏移");
+		gtk_button_set_label(GTK_BUTTON(Insert_timestamp), "插入时间戳");
+		gtk_button_set_label(GTK_BUTTON(Check_sync), "同步歌词");
+		gtk_button_set_label(GTK_BUTTON(Edit_apply), "应用");
+		gtk_button_set_label(GTK_BUTTON(Edit_cancel), "取消");
+		gtk_button_set_label(GTK_BUTTON(Edit_OK), "确认");
+		gtk_window_set_title(EditWindow, "编辑");
 	}
 
 	DB_playItem_t *track = deadbeef->streamer_get_playing_track();
