@@ -21,7 +21,7 @@ gtk2: lyricbar
 
 lyricbar: resource.h config_dialog.o lrcspotify.o megalobiz.o azlyrics.o kugou.o ui.o base64.o utils.o resources.o main.o
 	$(if $(LYRICBAR),, $(error You should only access this target via "gtk3" or "gtk2"))
-	$(CXX) -rdynamic -shared $(LDFLAGS) main.o resources.o config_dialog.o lrcspotify.o megalobiz.o azlyrics.o ui.o utils.o $(LCURL) -o $(LYRICBAR) $(LIBS)
+	$(CXX) -rdynamic -shared $(LDFLAGS) main.o resources.o config_dialog.o lrcspotify.o megalobiz.o azlyrics.o kugou.o ui.o base64.o utils.o $(LCURL) -o $(LYRICBAR) $(LIBS)
 
 lrcspotify.o: src/lrcspotify.cpp src/lrcspotify.h
 	$(CXX) src/lrcspotify.cpp -c $(LIBFLAGS) $(CXXFLAGS) -lcurl
@@ -33,7 +33,7 @@ azlyrics.o: src/azlyrics.cpp src/azlyrics.h
 	$(CXX) src/azlyrics.cpp -c $(LIBFLAGS) $(CXXFLAGS) -lcurl
 
 kugou.o: src/kugou.cpp src/kugou.h
-	$(CXX) src/kugou.cpp -c $(LIBFLAGS) $(CXXFLAGS) -lcurl -lpthread
+	$(CXX) src/kugou.cpp -c $(LIBFLAGS) $(CXXFLAGS) -lcurl
 
 ui.o: src/ui.cpp src/ui.h
 	$(CXX) src/ui.cpp -c $(LIBFLAGS) $(CXXFLAGS)
