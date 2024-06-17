@@ -4,6 +4,7 @@
 #include "lrcspotify.h"
 #include "megalobiz.h"
 #include "azlyrics.h"
+#include "kugou.h"
 #include <deadbeef/deadbeef.h>
 #include "resources.h"
 #include <gtkmm.h>
@@ -340,6 +341,19 @@ void populate_tree_view(vector<string> songs, string source) {
 		gtk_tree_store_set(treeStore, &iter_populate, 2, songs[i+2].c_str(), -1);
 		gtk_tree_store_set(treeStore, &iter_populate, 3, source.c_str(), -1);
 		gtk_tree_store_set(treeStore, &iter_populate, 4, songs[i+3].c_str(), -1);
+/*
+      <!-- column-name Artist -->
+      <column type="gchararray"/>
+      <!-- column-name Song -->
+      <column type="gchararray"/>
+      <!-- column-name Album -->
+      <column type="gchararray"/>
+      <!-- column-name Source -->
+      <column type="gchararray"/>
+      <!-- column-name gchararray1 -->
+      <column type="gchararray"/>
+ */
+
 	}
 	
 }
@@ -389,6 +403,9 @@ void	on_row_double_clicked (GtkButton *b) {
 	else if (strcmp(provider, "AZlyrics") == 0){
 		selected_lyrics = azlyrics_lyrics_downloader(value);
 	}
+	else if (strcmp(provider, "Kugou") == 0) {
+		selected_lyrics = kugou_lyrics_downloader(value);
+	}
 
 	gtk_label_set_label(PreViewLyrics,selected_lyrics.lyrics.c_str());
 }
@@ -399,7 +416,10 @@ void thread_listener_slow(string text_song, string text_artist){
 }
 
 void thread_listener_fast(string text_song, string text_artist){
-	vector<string> spotify_songs = 	spotify_get_songs(text_song,text_artist);
+	vector<string> kugou_songs = kugou_get_songs(text_song, text_artist);
+	populate_tree_view(kugou_songs, "Kugou");
+
+	vector<string> spotify_songs = 	spotify_get_songs(text_song, text_artist);
 	populate_tree_view(spotify_songs, "Spotify");
 
 	vector<string> azlyrics_songs = azlyrics_get_songs(text_song, text_artist);
