@@ -3,6 +3,7 @@
 #include "base64.h"
 #include <chrono>
 #include <thread>
+#include <iostream>
 
 using json = nlohmann::json;
 
@@ -38,7 +39,7 @@ std::vector<std::string> GetFileHashs(std::string artist, std::string song, stru
     auto j11 = j1.at("data");
     auto j12 = j11.at("lists");
     int size = j12.size();
-    if(size>10) {
+    if (size > 10) {
         size = 10;
     }
     int i = 0;
@@ -53,42 +54,72 @@ std::vector<std::string> GetFileHashs(std::string artist, std::string song, stru
         j13.at("AlbumName").get_to(albumName);
         std::string singerName;
         j13.at("SingerName").get_to(singerName);
-        // cout << fileHash << endl;
+        
+        std::cout << fileHash << ", " << songName << ", " << albumName << ", " << singerName << std::endl;
 
         songs.push_back(singerName);
         songs.push_back(songName);
         songs.push_back(albumName);
         songs.push_back(fileHash);
-        if(i >= size) {
+        if (i >= size) {
             break;
         }
-           
+
     }
-    
+
     return songs;
 }
 
-void GetAccesskey(std::string fileHash, struct curl_slist* headers, std::string& id, std::string& accesskey)
+
+std::string GetFileHash(std::string song, std::string artist, struct curl_slist* headers)
 {
-    std::string getAccesskey = "http://lyrics.kugou.com/search?ver=1&man=yes&client=mobi&hash=" + fileHash;
+    std::string song_artist = song + "+" + artist;
+    std::string encodeStr1 = urlencode(song_artist);
+    std::string getFileHash = "https://songsearch.kugou.com/song_search_v2?filter=2&platform=WebFilter&keyword=" + encodeStr1 + "&pagesize=10&page=1";
+
+    std::string fileHashContent = text_downloader(headers, getFileHash);
+    auto j1 = json::parse(fileHashContent);
+    auto j11 = j1.at("data");
+    auto j12 = j11.at("lists");
+    auto j13 = j12[0];
+    std::string fileHash;
+    j13.at("FileHash").get_to(fileHash);
+    std::cout << fileHash << std::endl;
+    return fileHash;
+}
+
+std::string GetAccesskey(std::string fileHash, struct curl_slist* headers, std::string& id, std::string& accesskey)
+{
+    string getAccesskey = "http://lyrics.kugou.com/search?ver=1&man=yes&client=mobi&hash=" + fileHash;
 
     std::string accesskeyContent = text_downloader(headers, getAccesskey);
+    if (accesskeyContent.empty())
+        return "";
     auto j2 = json::parse(accesskeyContent);
     auto j21 = j2["candidates"][0];
+    if (j21.find("id") != j21.end()) {
+        j21.at("id").get_to(id);
+    }
+    if (j21.find("accesskey") != j21.end()) {
+        j21.at("accesskey").get_to(accesskey);
+    }
+    std::cout << id << ", " << accesskey << std::endl;
 
-    j21.at("id").get_to(id);
-    j21.at("accesskey").get_to(accesskey);
-    // std::cout << id << ", " << accesskey << std::endl;
+    return "";
 }
 
 std::string GetLyrics(std::string id, std::string accesskey, struct curl_slist* headers)
 {
-    std::string getLyrics = "http://lyrics.kugou.com/download?ver=1&client=iphone&fmt=lrc&charset=utf8&id=" + id + "&accesskey=" + accesskey;
+    string getLyrics = "http://lyrics.kugou.com/download?ver=1&client=iphone&fmt=lrc&charset=utf8&id=" + id + "&accesskey=" + accesskey;
 
     auto result = text_downloader(headers, getLyrics);
+    if (result.empty())
+        return "";
     auto js = json::parse(result);
     std::string content;
-    js.at("content").get_to(content);
+    if (js.find("content") != js.end()) {
+        js.at("content").get_to(content);
+    }
     std::string data = base64_decode(content);
 
     return data;
@@ -103,11 +134,11 @@ std::string down_lyrics(std::string artist, std::string song)
     headers = curl_slist_append(headers, "Accept-Language:zh-CN,zh;q=0.8");
     std::string album = song;
     std::string fileHash = GetFileHashs(artist, song, headers)[0];
-    std::this_thread::sleep_for(std::chrono::microseconds(300));
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     std::string id;
     std::string accesskey;
     GetAccesskey(fileHash, headers, id, accesskey);
-    std::this_thread::sleep_for(std::chrono::microseconds(300));
+    std::this_thread::sleep_for(std::chrono::milliseconds(600));
     std::string lyrics = GetLyrics(id, accesskey, headers);
 
     return lyrics;
@@ -147,7 +178,7 @@ struct parsed_lyrics kugou_lyrics_downloader(std::string  fileHash)
     std::string id;
     std::string accesskey;
     GetAccesskey(fileHash, headers, id, accesskey);
-    std::this_thread::sleep_for(std::chrono::microseconds(300));
+    std::this_thread::sleep_for(std::chrono::milliseconds(600));
     std::string lyrics = GetLyrics(id, accesskey, headers);
     string_lyrics.lyrics = lyrics;
 
