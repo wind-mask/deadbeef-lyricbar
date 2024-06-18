@@ -1,7 +1,7 @@
 #include "utils.h"
 #include "debug.h"
 #include "gettext.h"
-#include "lrcspotify.h"
+#include "kugou.h"
 #include "ui.h"
 
 #include <sys/stat.h>
@@ -319,12 +319,12 @@ void save_meta_data(DB_playItem_t *playing_song, struct parsed_lyrics lyrics){
 // Function to remove special characters.
 string specialforplus(const char* text) {
 	string counter = string(text);
-	for(unsigned i = 0; i < counter.size(); i++)
-    {
-        if( (counter[i] < 'A' ||  counter[i] > 'Z') &&  (counter[i] < 'a' ||  counter[i] > 'z') &&  (counter[i] < '0' ||  counter[i] > '9')) {  
-            counter[i] = '+';
-		}
-    }
+	// for(unsigned i = 0; i < counter.size(); i++)
+    // {
+    //     if( (counter[i] < 'A' ||  counter[i] > 'Z') &&  (counter[i] < 'a' ||  counter[i] > 'z') &&  (counter[i] < '0' ||  counter[i] > '9')) {  
+    //         counter[i] = '+';
+	// 	}
+    // }
     return counter;
 }
 // Function to remove replace substrings.
@@ -433,7 +433,7 @@ struct parsed_lyrics get_lyrics_next_to_file(DB_playItem_t *track) {
 	trackstring = trackstring.substr(0, lastindex);
 	
 	//std::cout << "track_location: " << track_location << std::endl;
-	//std::cout << "trackstring: " << trackstring << std::endl;
+	std::cout << "get_lyrics_next_to_file: " << trackstring << std::endl;
 
 	infile.open(trackstring + ".lrc", ios_base::app); //ios_base::app
 	if(infile.is_open()){
@@ -457,7 +457,8 @@ struct parsed_lyrics get_lyrics_next_to_file(DB_playItem_t *track) {
 			std::cout << "file not exist : " << trackstring << ".txt" << std::endl;
 		}
 	}
-	return{lyrics, sync};	
+	debug_out << "get_lyrics_next_to_file: " << lyrics << std::endl;
+	return {lyrics, sync};	
 }
 
 struct parsed_lyrics get_lyrics_from_metadata(DB_playItem_t *track) {
@@ -465,6 +466,7 @@ struct parsed_lyrics get_lyrics_from_metadata(DB_playItem_t *track) {
 	deadbeef->pl_lock();
 	const char *lyrics = deadbeef->pl_find_meta(track, "lyrics")
 							?: deadbeef->pl_find_meta(track, "SYLT");
+	
 	if (!lyrics) {
 		syncedlyrics = false;
 		lyrics = deadbeef->pl_find_meta(track, "unsynced lyrics")
@@ -475,6 +477,7 @@ struct parsed_lyrics get_lyrics_from_metadata(DB_playItem_t *track) {
 	}
 	deadbeef->pl_unlock();
 	string string_lyrics = lyrics;
+	debug_out << "get_lyrics_from_metadata:" << string_lyrics << std::endl;
 	return {string_lyrics, syncedlyrics};
 }
 
@@ -489,7 +492,7 @@ void save_next_to_file(struct parsed_lyrics lyrics, DB_playItem_t *track) {
 	trackstring = trackstring.substr(0, lastindex);
 	if (lyrics.sync == true) {
 		try {
-		outfile.open(trackstring + ".lrc", ios_base::trunc);//ios_base::app
+		outfile.open(trackstring + ".lrc", ios_base::trunc|ios_base::out);
 		}
 		catch (...) {
 			std::cout << "Unable to write file\n";
@@ -497,13 +500,15 @@ void save_next_to_file(struct parsed_lyrics lyrics, DB_playItem_t *track) {
 	}
 	else {
 		try {
-		outfile.open(trackstring + ".txt", ios_base::trunc);//ios_base::app
+		outfile.open(trackstring + ".txt", ios_base::trunc|ios_base::out);
 		}
 		catch (...)	{
 			std::cout << "Unable to write file\n";
 		}
 	}
+	debug_out << "save_next_to_file: " << lyrics.lyrics << endl;
 	outfile << lyrics.lyrics << endl;
+	outfile.flush();
 	outfile.close();
 }
 
@@ -650,8 +655,6 @@ void update_lyrics(void *tr) {
 		deadbeef->pl_unlock();
 	}
 
-
-
 	if (artist && title) {
 		struct parsed_lyrics cached_lyrics = get_lyrics_next_to_file(track);
 
@@ -667,23 +670,22 @@ void update_lyrics(void *tr) {
 		}
 	}
 	set_lyrics(track, "", "", _("Loading..."), "");
-
+	debug_out << "Loading..." << std::endl;
 //	 No lyrics in the tag or cache; try to get some and cache if succeeded.
-//	Search for lyrics on spotify:	
-	struct parsed_lyrics spoty_lyrics = {"",false};
-	spoty_lyrics = spotify(specialforplus(title), specialforplus(artist));
-
-	if (spoty_lyrics.lyrics != "") {
-//		save_next_to_file(spoty_lyrics, track);
-		if (spoty_lyrics.sync){
-			chopset_lyrics(track, spoty_lyrics.lyrics);
-
+//	Search for lyrics on kugou:	
+	struct parsed_lyrics kugou_lyrics = {"", false};
+	kugou_lyrics = kugou(specialforplus(title), specialforplus(artist));
+	debug_out << "Loaded kugou_lyrics.lyrics" << kugou_lyrics.lyrics << std::endl;
+	if (kugou_lyrics.lyrics != "") {
+		save_next_to_file(kugou_lyrics, track);
+		if (kugou_lyrics.sync){
+			chopset_lyrics(track, kugou_lyrics.lyrics);
 		}
 		else{
-			set_lyrics(track, "", "", spoty_lyrics.lyrics, "");
+			set_lyrics(track, "", "", kugou_lyrics.lyrics, "");
 		}
 		sync_or_unsync(syncedlyrics);
-		save_meta_data(track, spoty_lyrics);
+		save_meta_data(track, kugou_lyrics);
 		return;
 	}
 

@@ -76,7 +76,7 @@ void set_lyrics(DB_playItem_t *track, string past, string present, string future
 	signal_idle().connect_once([track, past, present, future, padding ] {
 		//debug_out << "set_lyrics past: " << past << std::endl;
 		//debug_out << "set_lyrics present: " << present << std::endl;
-		debug_out << "set_lyrics future: " << future << std::endl;
+		//debug_out << "set_lyrics future: " << future << std::endl;
 		if (!is_playing(track)) {
 			return;
 		}

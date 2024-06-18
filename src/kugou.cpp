@@ -164,7 +164,7 @@ std::string down_lyrics(std::string artist, std::string song)
     headers = curl_slist_append(headers, "Accept:application/json, text/javascript, */*; q=0.01");
     headers = curl_slist_append(headers, "Accept-Language:zh-CN,zh;q=0.8");
     std::string album = song;
-    std::string fileHash = GetFileHashs(artist, song, headers)[0];
+    std::string fileHash = GetFileHashs(artist, song, headers)[3];
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     std::string id;
     std::string accesskey;
@@ -189,7 +189,7 @@ std::vector<std::string> kugou_get_songs(std::string song, std::string artist)
 
 struct parsed_lyrics kugou(std::string artist, std::string song)
 {
-    struct parsed_lyrics string_lyrics = {"", false};
+    struct parsed_lyrics string_lyrics = {"", true};
 
     std::string lyrics = down_lyrics(artist, song);
     string_lyrics.lyrics = lyrics;

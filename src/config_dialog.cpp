@@ -364,7 +364,9 @@ void	on_Save_clicked (GtkButton *b, gpointer user_data) {
 	DB_playItem_t *track = static_cast<DB_playItem_t *>(user_data);
 	deadbeef->pl_unlock(); 
 	if (track){
-		save_meta_data( track, selected_lyrics);
+		struct parsed_lyrics copy_lycris = {selected_lyrics.lyrics, true};
+		save_meta_data(track, copy_lycris);
+		save_next_to_file(copy_lycris, track);
 		DB_playItem_t *playing_track = deadbeef->streamer_get_playing_track();
 		if (playing_track){
 			if (playing_track == track){
@@ -408,7 +410,7 @@ void	on_row_double_clicked (GtkButton *b) {
 		selected_lyrics = kugou_lyrics_downloader(value);
 	}
 
-	gtk_label_set_label(PreViewLyrics,selected_lyrics.lyrics.c_str());
+	gtk_label_set_label(PreViewLyrics, selected_lyrics.lyrics.c_str());
 }
 
 void thread_listener_slow(string text_song, string text_artist){

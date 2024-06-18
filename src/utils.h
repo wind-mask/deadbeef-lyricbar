@@ -49,6 +49,7 @@ void update_lyrics(void *tr);
 struct parsed_lyrics get_lyrics_from_metadata(DB_playItem_t *track);
 
 void save_meta_data(DB_playItem_t *playing_song, struct parsed_lyrics lyrics);
+void save_next_to_file(struct parsed_lyrics lyrics, DB_playItem_t *track);
 
 int mkpath(const std::string &name, mode_t mode);
 
