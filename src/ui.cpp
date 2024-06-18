@@ -74,7 +74,9 @@ vector<int> sizelines(DB_playItem_t * track, string lyrics) {
 
 void set_lyrics(DB_playItem_t *track, string past, string present, string future, string padding) {
 	signal_idle().connect_once([track, past, present, future, padding ] {
-
+		//debug_out << "set_lyrics past: " << past << std::endl;
+		//debug_out << "set_lyrics present: " << present << std::endl;
+		debug_out << "set_lyrics future: " << future << std::endl;
 		if (!is_playing(track)) {
 			return;
 		}
@@ -91,9 +93,9 @@ void set_lyrics(DB_playItem_t *track, string past, string present, string future
 		if (g_utf8_validate(future.c_str(),-1,NULL)){
 			refBuffer->insert_with_tags(refBuffer->end(), string{"\n"} + artist + "\n\n", tagsArtist);
 			refBuffer->insert_with_tags(refBuffer->end(), padding, tagPadding);
-			refBuffer->insert_with_tags(refBuffer->end(),past, tagsNosyncline);
-			refBuffer->insert_with_tags(refBuffer->end(),present, tagsSyncline);
-			refBuffer->insert_with_tags(refBuffer->end(),future, tagsNosyncline);
+			refBuffer->insert_with_tags(refBuffer->end(), past, tagsNosyncline);
+			refBuffer->insert_with_tags(refBuffer->end(), present, tagsSyncline);
+			refBuffer->insert_with_tags(refBuffer->end(), future, tagsNosyncline);
 		}
 		else{
 			death_signal = 1;

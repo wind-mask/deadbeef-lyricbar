@@ -231,7 +231,7 @@ void thread_listener(DB_playItem_t *track){
 
 // Main loop thread caller.
 void chopset_lyrics(DB_playItem_t *track, string lyrics){
-//	cout << "Chopset lyrics" "\n";
+	debug_out << "Chopset lyrics" << "\n";
 	lrc = lyric2vector(lyrics);
 	DB_playItem_t *it = deadbeef->streamer_get_playing_track();
 	float length = deadbeef->pl_get_item_duration(it);
@@ -631,14 +631,14 @@ void update_lyrics(void *tr) {
 	DB_playItem_t *track = static_cast<DB_playItem_t*>(tr);
 	struct parsed_lyrics meta_lyrics = get_lyrics_from_metadata(track);
 	if (meta_lyrics.lyrics != "") {
+		debug_out << "meta_lyrics.sync: " << meta_lyrics.sync << std::endl;
 		if (meta_lyrics.sync == true) {
 			chopset_lyrics(track, meta_lyrics.lyrics);
-		}
-		else{
+		} else {
 			set_lyrics(track, "", "", meta_lyrics.lyrics, "");
 		}
 		sync_or_unsync(syncedlyrics);
-	return;
+		return;
 	}
 
 	const char *artist;

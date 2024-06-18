@@ -8,6 +8,7 @@
 #include <deadbeef/deadbeef.h>
 #include "resources.h"
 #include <gtkmm.h>
+#include "debug.h"
 
 #include <filesystem>
 #include <vector>
@@ -324,12 +325,12 @@ int on_button_config (GtkMenuItem *menuitem, gpointer user_data) {
 
 string specialtoplus(const char* text) {
 	string counter = string(text);
-	for(unsigned i = 0; i < counter.size(); i++)
-    {
-        if( (counter[i] < 'A' ||  counter[i] > 'Z') &&  (counter[i] < 'a' ||  counter[i] > 'z') &&  (counter[i] < '0' ||  counter[i] > '9')) {  
-            counter[i] = '+';
-		}
-    }
+	// for(unsigned i = 0; i < counter.size(); i++)
+    // {
+    //     if( (counter[i] < 'A' ||  counter[i] > 'Z') &&  (counter[i] < 'a' ||  counter[i] > 'z') &&  (counter[i] < '0' ||  counter[i] > '9')) {  
+    //         counter[i] = '+';
+	// 	}
+    // }
     return counter;
 }
 
@@ -416,6 +417,8 @@ void thread_listener_slow(string text_song, string text_artist){
 }
 
 void thread_listener_fast(string text_song, string text_artist){
+	debug_out << "thread_listener_fast" <<  text_song.c_str() << ", " << text_artist.c_str() << std::endl;
+
 	vector<string> kugou_songs = kugou_get_songs(text_song, text_artist);
 	populate_tree_view(kugou_songs, "Kugou");
 
@@ -428,12 +431,14 @@ void thread_listener_fast(string text_song, string text_artist){
 
 
 void	on_Search_clicked (GtkButton *b) {
+	debug_out << "lyricbar > on_Search_clicked" << std::endl;
 	gtk_tree_store_clear(treeStore);
 	string text_artist, text_song, text_album;
 
 	text_artist = specialtoplus(gtk_entry_get_text(Artist_input));
 	text_song = specialtoplus(gtk_entry_get_text(Song_input));
 	text_album = specialtoplus(gtk_entry_get_text(Album_input));
+	debug_out << text_artist << ": " << text_song << std::endl;
 
 	thread t1(thread_listener_fast, text_song,text_artist);
 	thread t2(thread_listener_slow, text_song,text_artist);

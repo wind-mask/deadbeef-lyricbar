@@ -4,8 +4,39 @@
 #include <chrono>
 #include <thread>
 #include <iostream>
+#include <regex>
 
 using json = nlohmann::json;
+
+std::vector<std::string> str_split(std::string s, std::string delimiter) {
+     size_t pos_start = 0, pos_end, delim_len = delimiter.length();
+     std::string token;
+     std::vector<std::string> res;
+ 
+     while ((pos_end = s.find(delimiter, pos_start)) != std::string::npos) {
+         token = s.substr(pos_start, pos_end - pos_start);
+         pos_start = pos_end + delim_len;
+         res.push_back(token);
+     }
+     res.push_back(s.substr(pos_start));
+     return res;
+}
+
+std::string LycrisDetial(std::string lycris)
+{
+    std::string result_lycris = "";
+    auto datas = str_split(lycris, "\n");
+    for (auto& data : datas) {
+        std::smatch match;//搜索结果
+        std::regex pattern("(\\[\\d\\d:\\d\\d.\\d\\d\\])");
+        if (std::regex_search(data, match, pattern))
+        {
+            result_lycris.append(data);
+            result_lycris.append("\n");
+        }
+    }
+    return result_lycris;
+}
 
 std::string urlencode(const std::string& url) {
     std::string encoded;
@@ -121,8 +152,8 @@ std::string GetLyrics(std::string id, std::string accesskey, struct curl_slist* 
         js.at("content").get_to(content);
     }
     std::string data = base64_decode(content);
-
-    return data;
+    std::string lyrics = LycrisDetial(data);
+    return lyrics;
 }
 
 std::string down_lyrics(std::string artist, std::string song)
