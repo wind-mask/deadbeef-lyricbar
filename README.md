@@ -1,4 +1,4 @@
-# deadbeef-lyricbar 优化
+# deadbeef-lyricbar 歌词插件
 
 
 ## 效果展示
@@ -13,14 +13,33 @@
 
 ## 工作环境
 
-> Ubuntu 22.04.3 LTS
+```
+       _,met$$$$$gg.          xxxxxx@xxx-pc 
+    ,g$$$$$$$$$$$$$$$P.       ------------- 
+  ,g$$P"     """Y$$.".        OS: Debian GNU/Linux 12 (bookworm) x86_64 
+ ,$$P'              `$$$.     Host: X99-QD4 
+',$$P       ,ggs.     `$$b:   Kernel: 6.1.0-21-amd64 
+`d$$'     ,$P"'   .    $$$    Uptime: 2 hours, 20 mins 
+ $$P      d$'     ,    $$P    Packages: 2212 (dpkg), 8 (snap) 
+ $$:      $$.   -    ,d$$'    Shell: zsh 5.9 
+ $$;      Y$b._   _,d$P'      Resolution: 1920x1080 
+ Y$$.    `.`"Y$$$$P"'         DE: GNOME 43.9 
+ `$$b      "-.__              WM: Mutter 
+  `Y$$                        WM Theme: Adwaita 
+   `Y$$.                      Theme: Adwaita [GTK2/3] 
+     `$$b.                    Icons: Adwaita [GTK2/3] 
+       `Y$$b.                 Terminal: gnome-terminal 
+          `"Y$b._             CPU: Intel Xeon E5-2680 v4 (28) @ 3.300GHz 
+              `"""            GPU: AMD ATI Radeon RX 6650 XT / 6700S / 6800S 
+                              Memory: 5526MiB / 64135MiB 
+```
 
 ## 编译依赖
 
 ```shell
 
 sudo apt-get install libgtkmm-3.0-dev
-sudo apt-get install libcurl5-openssl-dev //或 sudo apt install libcurl4-openssl-dev
+sudo sudo apt install libcurl4-openssl-dev
 sudo apt install libtag1-dev
 sudo apt-get install autoconf automake libtool autopoint 
 ```
@@ -57,121 +76,22 @@ sudo cp *.h /usr/local/include/deadbeef
 git clone https://github.com/zhanxh/deadbeef-lyricbar.git
 ```
 
+- linux
 ```shell
 make gtk3
 ```
+- windows mingw64
+```shell
+make gtk3 -f MakefileWin
+```
+
 ### 基于**改良版**修改
-> utils.cpp 修改点
 
-```C++
-#include <sstream>
-```
+- 支持自动下载歌词
+- 支持KG的歌词搜索 
+- glade中的西班牙语改为英文，代码中原英文翻译改为中文翻译
 
+## 存在问题
 
-```c++
-
-// Function to parse synced lyrics:
-struct sync lyric2vector( string lyrics){
-	//cout << "lyric2vector" "\n";
-	vector<string> synclyrics;
-	vector<double> position;
-	string line;
-	int squarebracket;
-	int repeats = 0; 
-	//If last character is a ] add an space to have same number of lyrics and positions.
-	if (lyrics.at(lyrics.length() - 1) == ']'){
-		lyrics.push_back(' ');
-	}
-	if (lyrics.length() <= 3){
-		position.push_back(0);
-		struct sync  emptylyrics = bubbleSort(position, synclyrics, 1);
-		return emptylyrics;
-	}
-
-	for (unsigned i=0; i < lyrics.length() - 3; ++i){
-		if ((lyrics.at(i) == '[') && (lyrics.at(i+1) == '0') && (lyrics.at(i+3) == ':') ) {
-  			++repeats;
-			position.push_back ((lyrics.at(i + 1) - 48)*600 + (lyrics.at(i + 2) - 48)*60 + (lyrics.at(i + 4) - 48)*10 + (lyrics.at(i + 5) - 48) + (lyrics.at(i + 7) - 48)*0.1 + (lyrics.at(i + 8) - 48)*0.01);
-			if ((lyrics.length() > i + 10) && (lyrics.at(i+10) != '[')) {
-				line = lyrics.substr(i + 10, lyrics.length() - i - 10);
-				squarebracket = line.find_first_of('[');
-				if (((lyrics.at(i+8 + squarebracket)) != '\n') && (lyrics.at(i+8 + squarebracket)) != '\r'){
-					if(lyrics.at(i+10) == ']') // do兼容毫秒3位
-						line = lyrics.substr(i + 11, squarebracket-1);
-					else
-						line = lyrics.substr(i + 10, squarebracket-1);
-				}
-				else {
-					if(lyrics.at(i+10) == ']') // do兼容毫秒3位
-						line = lyrics.substr(i + 11, squarebracket-1);
-					else
-						line = lyrics.substr(i + 10, squarebracket-2);
-				}
-				++repeats;
-				while (--repeats ) {
-					synclyrics.push_back (line);
-				}
-					
-			}
-		}
-	}
-
-	int n = position.size();
-	struct sync  goodlyrics = bubbleSort(position, synclyrics, n);
-
-// For debug:
-//	for (auto k = goodlyrics.position.begin(); k != goodlyrics.position.end(); ++k)
-//    	cout << *k << " ";
-//
-//	for (auto i = goodlyrics.synclyrics.begin(); i != goodlyrics.synclyrics.end(); ++i)
-//    	cout << *i << '\n';
-	
-	return goodlyrics;
-}
-
-```
-
-```C++
-
-struct parsed_lyrics get_lyrics_next_to_file(DB_playItem_t *track) {
-	bool sync = false;
-	ifstream infile;
-	string lyrics;
-	std::stringstream buffer;
-
-	deadbeef->pl_lock();
-	const char *track_location = deadbeef->pl_find_meta(track, ":URI");
-	deadbeef->pl_unlock();
-	string trackstring = track_location;
-	size_t lastindex = trackstring.find_last_of(".");
-	trackstring = trackstring.substr(0, lastindex);
-	
-	std::cout << "track_location: " << track_location << std::endl;
-	std::cout << "trackstring: " << trackstring << std::endl;
-
-	infile.open(trackstring + ".lrc", ios_base::app); //ios_base::trunc
-	if(infile.is_open()){
-		std::stringstream buffer;
-		buffer << infile.rdbuf();
-		lyrics = buffer.str();
-		sync = true;	
-		std::cout << "file exist : " << trackstring << ".lrc" << std::endl;
-		std::cout << "lyrics1: " << lyrics << std::endl;
-	}
-	else
-	{
-		infile.open(trackstring + ".txt", ios_base::app); //ios_base::trunc
-		if(infile.is_open()){
-			std::stringstream buffer;
-			buffer << infile.rdbuf();
-			lyrics = buffer.str();
-			std::cout << "lyrics2: "<< lyrics << std::endl;
-		}
-		else{
-			std::cout << "file not exist : " << trackstring << ".txt" << std::endl;
-		}
-	}
-	return{lyrics, sync};	
-}
-```
-
+1. windows下插件导出函数正常的情况下，仍然没有被加载，原因还在看。
+	windows版本看不到日志信息，有哪位知道反馈下？
