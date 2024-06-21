@@ -696,7 +696,9 @@ void update_lyrics(void *tr) {
 //---------------------------------------------------------------------
 //****** /Main: Try to get lyrics from Metadata,file,spotify. *********
 //---------------------------------------------------------------------
-
+#if (defined(_WIN32) || defined(__WIN32__))
+#define mkdir(A, B) mkdir(A)
+#endif
 
 /**
  * Creates the directory tree.
@@ -717,7 +719,7 @@ int mkpath(const string &name, mode_t mode) {
 	return 0;
 }
 
-int remove_from_cache_action(DB_plugin_action_t *, int ctx) {
+int remove_from_cache_action(DB_plugin_action_t *, ddb_action_context_t ctx) {
 	if (ctx == DDB_ACTION_CTX_SELECTION) {
 		deadbeef->pl_lock();
 		ddb_playlist_t *playlist = deadbeef->plt_get_curr();

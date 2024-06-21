@@ -118,7 +118,7 @@ static ddb_gtkui_widget_t *w_lyricbar_create(void) {
 	gtkui_plugin->w_override_signals(widget->base.widget, widget);
 	g_signal_connect(children->data, "populate_popup", G_CALLBACK (_pop), children->data);
 
-	return widget;
+	return (ddb_gtkui_widget_t*)widget;
 }
 
 static int lyricbar_connect() {
@@ -133,9 +133,9 @@ static int lyricbar_connect() {
 
 __attribute__ ((visibility ("default")))
 #if GTK_MAJOR_VERSION == 2
-DB_plugin_t *ddb_lyricbar_gtk2_load(DB_functions_t *ddb) {
+DDB_LYRICS_EXPORT DB_plugin_t *ddb_lyricbar_gtk2_load(DB_functions_t *ddb) {
 #else
-DB_plugin_t *ddb_lyricbar_gtk3_load(DB_functions_t *ddb) {
+DDB_LYRICS_EXPORT DB_plugin_t *ddb_lyricbar_gtk3_load(DB_functions_t *ddb) {
 #endif
 	deadbeef = ddb;
 	bindtextdomain("deadbeef-lyricbar", "/usr/share/locale");
