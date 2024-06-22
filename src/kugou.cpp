@@ -85,8 +85,7 @@ std::vector<std::string> GetFileHashs(std::string artist, std::string song, stru
         j13.at("AlbumName").get_to(albumName);
         std::string singerName;
         j13.at("SingerName").get_to(singerName);
-        
-        std::cout << fileHash << ", " << songName << ", " << albumName << ", " << singerName << std::endl;
+        // std::cout << fileHash << ", " << songName << ", " << albumName << ", " << singerName << std::endl;
 
         songs.push_back(singerName);
         songs.push_back(songName);
@@ -134,7 +133,7 @@ std::string GetAccesskey(std::string fileHash, struct curl_slist* headers, std::
     if (j21.find("accesskey") != j21.end()) {
         j21.at("accesskey").get_to(accesskey);
     }
-    std::cout << id << ", " << accesskey << std::endl;
+    // std::cout << id << ", " << accesskey << std::endl;
 
     return "";
 }

@@ -419,7 +419,7 @@ void thread_listener_slow(string text_song, string text_artist){
 }
 
 void thread_listener_fast(string text_song, string text_artist){
-	debug_out << "thread_listener_fast" <<  text_song.c_str() << ", " << text_artist.c_str() << std::endl;
+	// debug_out << "thread_listener_fast" <<  text_song.c_str() << ", " << text_artist.c_str() << std::endl;
 
 	vector<string> kugou_songs = kugou_get_songs(text_song, text_artist);
 	populate_tree_view(kugou_songs, "Kugou");
@@ -433,7 +433,7 @@ void thread_listener_fast(string text_song, string text_artist){
 
 
 void	on_Search_clicked (GtkButton *b) {
-	debug_out << "lyricbar > on_Search_clicked" << std::endl;
+	// debug_out << "lyricbar > on_Search_clicked" << std::endl;
 	gtk_tree_store_clear(treeStore);
 	string text_artist, text_song, text_album;
 
