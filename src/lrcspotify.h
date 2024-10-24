@@ -1,13 +1,12 @@
 #pragma once
-#include <deadbeef/deadbeef.h>
 #include "utils.h"
+// #include <deadbeef/deadbeef.h>
 
-#include <gtk/gtk.h>
+// #include <gtk/gtk.h>
 
 #ifdef __cplusplus
-#include <vector>
-#include <string>
-
+// #include <string>
+// #include <vector>
 
 using namespace std;
 
@@ -17,7 +16,7 @@ struct parsed_lyrics spotify(string artist, string song);
 
 struct parsed_lyrics spotify_lyrics_downloader(string trackid);
 
-vector<string> spotify_get_songs(string song,string artist);
+vector<string> spotify_get_songs(string song, string artist);
 
 string timestamps(int number);
 
