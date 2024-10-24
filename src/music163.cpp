@@ -1,6 +1,7 @@
 #include "music163.h"
 #include "json.hpp"
 #include "utils.h"
+#include <cstddef>
 #include <cstdint>
 #include <string>
 using json = nlohmann::json;
@@ -14,26 +15,30 @@ std::vector<std::string> music163_get_songs(std::string song,
   if (j.is_null()) {
     return {};
   }
-  auto j1 = j.at("result");
-  if (j1.is_null()) {
+  try {
+    auto j1 = j.at("result");
+    if (j1.is_null()) {
+      return {};
+    }
+    auto j2 = j1.at("songs");
+    if (j2.is_null() || !j2.is_array() || j2.size() == 0) {
+      return {};
+    }
+    std::vector<std::string> songs;
+    for (auto &song : j2) {
+      auto name = song.at("name");
+      auto artist = song.at("artists")[0].at("name");
+      auto album = song.at("album").at("name");
+      songs.push_back(artist.get<std::string>());
+      songs.push_back(name.get<std::string>());
+      songs.push_back(album.get<std::string>());
+      int64_t id = song.at("id").get<int64_t>();
+      songs.push_back(std::to_string(id));
+    }
+    return songs;
+  } catch (std::exception &e) {
     return {};
   }
-  auto j2 = j1.at("songs");
-  if (j2.is_null() || !j2.is_array() || j2.size() == 0) {
-    return {};
-  }
-  std::vector<std::string> songs;
-  for (auto &song : j2) {
-    auto name = song.at("name");
-    auto artist = song.at("artists")[0].at("name");
-    auto album = song.at("album").at("name");
-    songs.push_back(artist.get<std::string>());
-    songs.push_back(name.get<std::string>());
-    songs.push_back(album.get<std::string>());
-    int64_t id = song.at("id").get<int64_t>();
-    songs.push_back(std::to_string(id));
-  }
-  return songs;
 }
 struct parsed_lyrics music163(std::string artist, std::string song) {
   auto songs = music163_get_songs(song, artist);
@@ -48,13 +53,17 @@ struct parsed_lyrics music163(std::string artist, std::string song) {
 struct parsed_lyrics music163_lyrics_downloader(std::string id) {
   auto lyrics_url = "https://music.163.com/api/song/media?id=" + id;
   auto lyrics_result = text_downloader(nullptr, lyrics_url);
-  auto lyrics_json = json::parse(lyrics_result);
-  if (lyrics_json.is_null() || lyrics_json.at("code").get<int>() != 200) {
+  try {
+    auto lyrics_json = json::parse(lyrics_result);
+    if (lyrics_json.is_null() || lyrics_json.at("code").get<int>() != 200) {
+      return {"", false};
+    }
+    auto lyrics = lyrics_json.at("lyric");
+    if (lyrics.is_null() || !lyrics.is_string()) {
+      return {"", false};
+    }
+    return {lyrics.get<std::string>(), true};
+  } catch (std::exception &e) {
     return {"", false};
   }
-  auto lyrics = lyrics_json.at("lyric");
-  if (lyrics.is_null() || !lyrics.is_string()) {
-    return {"", false};
-  }
-  return {lyrics.get<std::string>(), true};
 }
