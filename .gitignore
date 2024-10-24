@@ -62,6 +62,8 @@ dkms.conf
 src/resources.c
 src/resources.h
 
-# other 
+# other
 .vscode
 .idea
+compile_commands.json
+.cache
