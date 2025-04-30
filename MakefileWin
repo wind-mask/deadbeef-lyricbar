@@ -1,5 +1,5 @@
-CFLAGS+=-std=c99 -Wall -O2 -D_GNU_SOURCE -DDDB_LYRICS_EXPORT_LIB -fPIC -fvisibility=hidden -flto=auto -Wincompatible-pointer-types
-CXXFLAGS+=-std=c++14 -Wall -O2 -fPIC -fvisibility=hidden -flto=auto -DDDB_LYRICS_EXPORT_LIB
+CFLAGS+=-std=c99 -g -Wall -O2 -D_GNU_SOURCE -DDDB_LYRICS_EXPORT_LIB -DDDB_WARN_DEPRECATED=1 -fPIC -fno-builtin -fvisibility=hidden -Wincompatible-pointer-types 
+CXXFLAGS+=-std=c++14 -g -Wall -O2 -fPIC -fvisibility=hidden -fno-builtin -DDDB_LYRICS_EXPORT_LIB -DDDB_WARN_DEPRECATED=1
 LIBFLAGS=`pkg-config --cflags $(GTKMM) $(GTK)`
 LIBS=`pkg-config --libs $(GTKMM) $(GTK)`
 LCURL=-lcurl
@@ -9,12 +9,12 @@ GLIBC=glib-compile-resources
 prefix ?= $(out)
 prefix ?= /usr
 
-gtk3: GTKMM=gtkmm-3.0  taglib
+gtk3: GTKMM=gtkmm-3.0 taglib
 gtk3: GTK=gtk+-3.0
 gtk3: LYRICBAR=ddb_lyricbar_gtk3.dll
 gtk3: lyricbar
 
-gtk2: GTKMM=gtkmm-2.4
+gtk2: GTKMM=gtkmm-2.4 taglib
 gtk2: GTK=gtk+-2.0
 gtk2: LYRICBAR=ddb_lyricbar_gtk2.dll
 gtk2: lyricbar
@@ -60,8 +60,8 @@ resource.h:
 install:
 	install -d $(prefix)/lib/deadbeef
 	install -d $(prefix)/share/locale/ru/LC_MESSAGES
-	install -m 666 -D *.so $(prefix)/lib/deadbeef
+	install -m 666 -D *.dll $(prefix)/lib/deadbeef
 	msgfmt gettext/ru/deadbeef-lyricbar.po -o $(prefix)/share/locale/ru/LC_MESSAGES/deadbeef-lyricbar.mo
 
 clean:
-	rm -f *.o *.so
+	rm -f *.o *.dll

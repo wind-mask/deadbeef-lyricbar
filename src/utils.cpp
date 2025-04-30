@@ -42,7 +42,7 @@ char *locale_lang1 = setlocale(LC_CTYPE, NULL);
 // For debug:
 
 bool is_playing(DB_playItem_t *track) {
-    DB_playItem_t *pl_track = deadbeef->streamer_get_playing_track();
+    DB_playItem_t *pl_track = deadbeef->streamer_get_playing_track_safe();
     if ((pl_track) && (pl_track != track)){
         deadbeef->pl_item_unref(pl_track);
         return false;
@@ -254,7 +254,7 @@ void thread_listener(DB_playItem_t *track){
 void chopset_lyrics(DB_playItem_t *track, string lyrics){
     debug_out << "Chopset lyrics" << "\n";
     lrc = lyric2vector(lyrics);
-    DB_playItem_t *it = deadbeef->streamer_get_playing_track();
+    DB_playItem_t *it = deadbeef->streamer_get_playing_track_safe();
     float length = deadbeef->pl_get_item_duration(it);
 
     lrc.position.push_back((float)length -0.2);

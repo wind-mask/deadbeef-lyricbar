@@ -367,7 +367,7 @@ void	on_Save_clicked (GtkButton *b, gpointer user_data) {
 		struct parsed_lyrics copy_lycris = {selected_lyrics.lyrics, true};
 		save_meta_data(track, copy_lycris);
 		save_next_to_file(copy_lycris, track);
-		DB_playItem_t *playing_track = deadbeef->streamer_get_playing_track();
+		DB_playItem_t *playing_track = deadbeef->streamer_get_playing_track_safe();
 		if (playing_track){
 			if (playing_track == track){
 				death_signal = 1;
@@ -510,7 +510,7 @@ int on_button_search (GtkMenuItem *menuitem, gpointer user_data) {
 	}
 
 //	Playing track or selected on playlist to labels:
-	DB_playItem_t *track = deadbeef->streamer_get_playing_track();
+	DB_playItem_t *track = deadbeef->streamer_get_playing_track_safe();
 	if (track){
 		deadbeef->pl_lock();
 		gtk_entry_set_text(Artist_input, deadbeef->pl_find_meta(track, "artist"));
@@ -768,7 +768,7 @@ void	on_Edit_apply_clicked (GtkButton *b) {
 	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(Check_sync))){
 		sync = true;
 	}
-	DB_playItem_t *track = deadbeef->streamer_get_playing_track();
+	DB_playItem_t *track = deadbeef->streamer_get_playing_track_safe();
 	save_meta_data(track, {text, sync});
 	deadbeef->pl_item_unref(track);
 }
@@ -820,7 +820,7 @@ int on_button_edit (GtkMenuItem *menuitem, gpointer user_data) {
 		gtk_window_set_title(EditWindow, "编辑");
 	}
 
-	DB_playItem_t *track = deadbeef->streamer_get_playing_track();
+	DB_playItem_t *track = deadbeef->streamer_get_playing_track_safe();
 	struct parsed_lyrics track_lyrics;
 
 	if (track){
