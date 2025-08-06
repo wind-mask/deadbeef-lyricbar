@@ -7,13 +7,14 @@ LCURL=-lcurl
 LDFLAGS+=-flto=auto
 GLIBC=glib-compile-resources
 
+
 CC=gcc
 CXX=g++
 prefix ?= $(out)
 prefix ?= /usr
 
-gtk3: GTKMM=gtkmm-3.0  taglib
-gtk3: GTK=gtk+-3.0
+gtk3: GTKMM=gtkmm-3.0
+gtk3: GTK=gtk+-3.0 taglib
 gtk3: LYRICBAR=ddb_lyricbar_gtk3.so
 gtk3: lyricbar
 
@@ -22,9 +23,9 @@ gtk2: GTK=gtk+-2.0
 gtk2: LYRICBAR=ddb_lyricbar_gtk2.so
 gtk2: lyricbar
 
-lyricbar: config_dialog.o lrcspotify.o megalobiz.o azlyrics.o ui.o base64.o utils.o resources.o main.o music163.o
+lyricbar: config_dialog.o lrcspotify.o megalobiz.o azlyrics.o ui.o base64.o utils.o resources.o main.o kugou.o music163.o
 	$(if $(LYRICBAR),, $(error You should only access this target via "gtk3" or "gtk2"))
-	  $(CXX) -rdynamic -shared $(LDFLAGS)  main.o resources.o config_dialog.o lrcspotify.o megalobiz.o azlyrics.o  music163.o ui.o base64.o utils.o $(LCURL) -o $(LYRICBAR) $(LIBS)
+	  $(CXX) -rdynamic -shared $(LDFLAGS)  main.o resources.o config_dialog.o lrcspotify.o megalobiz.o azlyrics.o kugou.o  music163.o ui.o base64.o utils.o $(LCURL) -o $(LYRICBAR) $(LIBS) -g
 
 lrcspotify.o: src/lrcspotify.cpp src/lrcspotify.h
 	$(CXX) src/lrcspotify.cpp -c $(LIBFLAGS) $(CXXFLAGS) -lcurl
@@ -34,6 +35,10 @@ megalobiz.o: src/megalobiz.cpp src/megalobiz.h
 
 azlyrics.o: src/azlyrics.cpp src/azlyrics.h
 	$(CXX) src/azlyrics.cpp -c $(LIBFLAGS) $(CXXFLAGS) -lcurl
+
+kugou.o: src/kugou.cpp src/kugou.h
+	$(CXX) src/kugou.cpp -c $(LIBFLAGS) $(CXXFLAGS) -lcurl
+	
 music163.o: src/music163.cpp src/music163.h
 	$(CXX) src/music163.cpp -c $(LIBFLAGS) $(CXXFLAGS) -lcurl
 
@@ -47,25 +52,24 @@ utils.o: src/utils.cpp src/utils.h
 	$(CXX) src/utils.cpp -c $(LIBFLAGS) $(CXXFLAGS)
 
 config_dialog.o: src/config_dialog.cpp src/resources.h
-	$(CXX) src/config_dialog.cpp  -c $(LIBFLAGS) $(CXXFLAGS)
-
-resources.o: src/resources.c
-	$(CC) $(CFLAGS) src/resources.c -c `pkg-config --cflags $(GTK)`
+	$(CXX) src/config_dialog.cpp -c $(LIBFLAGS) $(CXXFLAGS) 
+	
+resources.o: src/resources.c src/resources.h
+	$(CC) $(CFLAGS) src/resources.c -c $(LIBFLAGS)
 
 main.o: src/main.c
-	$(CC) $(CFLAGS) src/main.c -c `pkg-config --cflags $(GTK)`
+	$(CC) $(CFLAGS) src/main.c -c $(LIBFLAGS)
 
-src/resources.h:
-	$(GLIBC) --generate-header src/resources.xml
+src/resources.h src/resources.c: src/resources.xml
+	$(GLIBC) --generate-header --target=src/resources.h src/resources.xml
+	$(GLIBC) --generate-source --target=src/resources.c src/resources.xml
 
-src/resources.c:
-	$(GLIBC) --generate-source src/resources.xml
 
-install:
-	install -d $(prefix)/lib/deadbeef
-	install -d $(prefix)/share/locale/ru/LC_MESSAGES
-	install -m 666 -D *.so $(prefix)/lib/deadbeef
-	msgfmt gettext/ru/deadbeef-lyricbar.po -o $(prefix)/share/locale/ru/LC_MESSAGES/deadbeef-lyricbar.mo
+install: ddb_lyricbar_gtk3.so
+	install -d $(DESTDIR)$(prefix)/lib/deadbeef
+	install -d $(DESTDIR)$(prefix)/share/locale/ru/LC_MESSAGES
+	install -m 644 ddb_lyricbar_gtk3.so $(DESTDIR)$(prefix)/lib/deadbeef/
+	msgfmt gettext/ru/deadbeef-lyricbar.po -o $(DESTDIR)$(prefix)/share/locale/ru/LC_MESSAGES/deadbeef-lyricbar.mo
 
 clean:
 	rm -f *.o *.so
@@ -73,3 +77,5 @@ clean:
 debug: CFLAGS+=$(DEBUGFLAGS)
 debug: CXXFLAGS+=$(DEBUGFLAGS)
 debug: gtk3	
+
+.PHONY: gtk3 gtk2 lyricbar install clean debug

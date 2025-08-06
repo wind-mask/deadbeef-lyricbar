@@ -2,10 +2,8 @@
 
 #include <stdlib.h>
 #include <string.h>
-
 #include "config_dialog.h"
 #include "gettext.h"
-#include "lrcspotify.h"
 #include "ui.h"
 #include "utils.h"
 
@@ -33,11 +31,11 @@ static gboolean _pop(GtkTextView *text_view, GtkWidget *popup,
   }
 
   GList *children = gtk_container_get_children(GTK_CONTAINER(popup));
-  gtk_container_remove(GTK_CONTAINER(popup), children->data);
-  while ((children = g_list_next(children)) != NULL) {
-    //		printf("%s \n",gtk_menu_item_get_label(children->data));
-    gtk_container_remove(GTK_CONTAINER(popup), children->data);
+  while (children != NULL) {
+    gtk_container_remove(GTK_CONTAINER(popup), GTK_WIDGET(children->data));
+    children = g_list_next(children);
   }
+
   gtk_menu_attach(GTK_MENU(popup), popup_config, 0, 1, 0, 1);
   gtk_menu_attach(GTK_MENU(popup), popup_search, 0, 1, 1, 2);
   gtk_menu_attach(GTK_MENU(popup), popup_edit, 0, 1, 2, 3);
@@ -45,6 +43,7 @@ static gboolean _pop(GtkTextView *text_view, GtkWidget *popup,
   gtk_widget_show(popup_config);
   gtk_widget_show(popup_search);
   gtk_widget_show(popup_edit);
+
   DB_playItem_t *track = deadbeef->streamer_get_playing_track();
   if (track) {
     deadbeef->pl_item_unref(track);
@@ -61,7 +60,6 @@ static gboolean _pop(GtkTextView *text_view, GtkWidget *popup,
                          user_data);
   return TRUE;
 }
-
 static DB_misc_t plugin;
 
 static int lyricbar_disconnect() {
@@ -108,8 +106,8 @@ static DB_plugin_action_t *lyricbar_get_actions() {
 }
 
 static ddb_gtkui_widget_t *w_lyricbar_create(void) {
-  widget_lyricbar_t *widget = malloc(sizeof(widget_lyricbar_t));
-  memset(widget, 0, sizeof(widget_lyricbar_t));
+  widget_lyricbar_t *widget =
+      (widget_lyricbar_t *)calloc(1, sizeof(widget_lyricbar_t));
 
   widget->base.widget = construct_lyricbar();
   widget->base.destroy = lyricbar_destroy;

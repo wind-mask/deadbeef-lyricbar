@@ -2,9 +2,12 @@
 #include "debug.h"
 #include "gettext.h"
 // #include "kugou.h"
+#include "glibmm/main.h"
 #include "music163.h"
 #include "ui.h"
 
+#include <atomic>
+#include <exception>
 #include <fstream>
 #include <iostream>
 #include <mutex>
@@ -97,91 +100,78 @@ struct sync bubbleSort(vector<double> arr, vector<string> text, int n) {
 
 // Function to parse synced lyrics:
 struct sync lyric2vector(string lyrics) {
-  // cout << "lyric2vector" "\n";
+
   vector<string> synclyrics;
   vector<double> position;
-  // string line;
-  // int squarebracket;
-  // int repeats = 0;
-  // If last character is a ] add an space to have same number of lyrics and
-  // positions.
-  if (lyrics.at(lyrics.length() - 1) == ']') {
-    lyrics.push_back(' ');
-  }
-  if (lyrics.length() <= 3) {
+  if (lyrics.empty() || lyrics.length() <= 3) {
+    debug_out << "lyric2vector: Invalid lyrics input" << std::endl;
     position.push_back(0);
-    struct sync emptylyrics = bubbleSort(position, synclyrics, 1);
-    return emptylyrics;
+    synclyrics.push_back("No lyrics available");
+    return bubbleSort(position, synclyrics, 1);
   }
+
+  try {
+    if (lyrics.at(lyrics.length() - 1) == ']') {
+      lyrics.push_back(' ');
+    }
+  } catch (const std::exception &e) {
+    debug_out
+        << "lyric2vector: Exception caught while checking last character: "
+        << e.what() << std::endl;
+    position.push_back(0);
+    synclyrics.push_back("Error processing lyrics");
+    return bubbleSort(position, synclyrics, 1);
+  }
+
   vector<string> lines = split(lyrics, "\n");
   std::regex pattern("\\[([0-9]{2}):([0-9]{2})\\.([0-9]{2,3})\\]([\\s\\S]*)");
   for (auto &line : lines) {
+    if (line.empty())
+      continue;
+
     std::smatch match;
     if (std::regex_search(line, match, pattern)) {
       if (match.size() != 5) {
-        // debug_out << "Error in lyrics line:" << line << std::endl;
+        debug_out << "Error in lyrics line:" << line << std::endl;
         continue;
       }
       // debug_out<< "Match: " << match[0] << std::endl;
-
-      int mm = match[3].length() == 3 ? 1000 : 100;
-      double time = std::stoi(match[1]) * 60 + std::stoi(match[2]) +
-                    std::stof(match[3]) / mm;
-      std::string lyric = match[4];
-      position.push_back(time);
-      synclyrics.push_back(trim(lyric));
+      try {
+        int mm = match[3].length() == 3 ? 1000 : 100;
+        double time = std::stoi(match[1]) * 60 + std::stoi(match[2]) +
+                      std::stof(match[3]) / mm;
+        std::string lyric = match[4];
+        position.push_back(time);
+        synclyrics.push_back(trim(lyric));
+      } catch (const std::exception &e) {
+        debug_out << "lyric2vector: Error parsing time for line: " << line
+                  << ", error: " << e.what() << std::endl;
+      }
     }
   }
 
-  // for (unsigned i=0; i < lyrics.length() - 3; ++i){
-  //     if ((lyrics.at(i) == '[') && (lyrics.at(i+1) == '0') && (lyrics.at(i+3)
-  //     == ':') ) {
-  //           ++repeats;
-  //         position.push_back ((lyrics.at(i + 1) - 48)*600 + (lyrics.at(i + 2)
-  //         - 48)*60 + (lyrics.at(i + 4) - 48)*10 + (lyrics.at(i + 5) - 48) +
-  //         (lyrics.at(i + 7) - 48)*0.1 + (lyrics.at(i + 8) - 48)*0.01); if
-  //         ((lyrics.length() > i + 10) && (lyrics.at(i+10) != '[')) {
-  //             line = lyrics.substr(i + 10, lyrics.length() - i - 10);
-  //             squarebracket = line.find_first_of('[');
-  //             if (((lyrics.at(i+8 + squarebracket)) != '\n') &&
-  //             (lyrics.at(i+8 + squarebracket)) != '\r'){
-  //                 if(lyrics.at(i+10) == ']')
-  //                     line = lyrics.substr(i + 11, squarebracket-1);
-  //                 else
-  //                     line = lyrics.substr(i + 10, squarebracket-1);
-  //             }
-  //             else {
-  //                 if(lyrics.at(i+10) == ']')
-  //                     line = lyrics.substr(i + 11, squarebracket-1);
-  //                 else
-  //                     line = lyrics.substr(i + 10, squarebracket-2);
-  //             }
-  //             ++repeats;
-  //             while (--repeats ) {
-  //                 synclyrics.push_back (line);
-  //             }
-
-  //         }
-  //     }
-  // }
-
+  // 确保至少有一行歌词
+  if (synclyrics.empty()) {
+    position.push_back(0);
+    synclyrics.push_back("No synchronized lyrics found");
+  }
   int n = position.size();
   struct sync goodlyrics = bubbleSort(position, synclyrics, n);
-
-  // For debug:
-  //	for (auto k = goodlyrics.position.begin(); k !=
-  // goodlyrics.position.end(); ++k)
-  //    	cout << *k << " ";
-  //
-  //	for (auto i = goodlyrics.synclyrics.begin(); i !=
-  // goodlyrics.synclyrics.end(); ++i)
-  //    	cout << *i << '\n';
 
   return goodlyrics;
 }
 
 // Function to scroll and remark line:
 void write_synced(DB_playItem_t *it) {
+  // pos是当前播放位置
+  // linessizes是当前歌词行数和可见行数
+  // lrc是当前歌词和时间戳
+  // past是过去的歌词
+  // present是当前正在播放的歌词
+  // future是未来的歌词
+  // padding是填充的空行，用于滚动效果
+  // presentpos是当前歌词在lrc中的位置
+  // minimuntopad是最小填充行数，用于滚动效果
   float pos = deadbeef->streamer_get_playpos();
   string past = "";
   string present = "";
@@ -203,7 +193,8 @@ void write_synced(DB_playItem_t *it) {
       }
     }
 
-    // Add padding variable at beginning of lyrics to show to make scroll with
+    // Add padding variable at beginning of lyrics to show to make scroll
+    // with
     // first lines.
     if (!linessizes.empty()) {
       for (int j = 0;
@@ -213,11 +204,6 @@ void write_synced(DB_playItem_t *it) {
         padding.append("\n");
       }
     }
-
-    // cout << "Present position: " << presentpos << " pos: " << pos << " LRC
-    // position[1] +1: " << lrc.position[linessizes[1]+1] << " linessizes[0]: "
-    // << linessizes[0] << " Operacion: " << ((lrc.position[linessizes[1]+1] -
-    // pos)/(lrc.position[linessizes[1]+1])*linessizes[0]) <<"\n";
 
     // Add padding variable at beginning of lyrics to show to make scroll when
     // removing a past line.
@@ -261,23 +247,68 @@ void thread_listener(DB_playItem_t *track) {
   }
 }
 
-// Main loop thread caller.
-void chopset_lyrics(DB_playItem_t *track, string lyrics) {
+void chopset_lyrics(DB_playItem_t *track, const string &lyrics) {
+  if (!track) {
+    debug_out << "chopset_lyrics: Invalid track pointer" << std::endl;
+    return;
+  }
+
   debug_out << "Chopset lyrics" << "\n";
   lrc = lyric2vector(lyrics);
-  DB_playItem_t *it = deadbeef->streamer_get_playing_track();
-  float length = deadbeef->pl_get_item_duration(it);
 
+  DB_playItem_t *it = deadbeef->streamer_get_playing_track();
+  if (!it) {
+    debug_out << "chopset_lyrics: No currently playing track" << std::endl;
+    return;
+  }
+
+  float length = deadbeef->pl_get_item_duration(it);
   lrc.position.push_back((float)length - 0.2);
   lrc.position.push_back((float)length);
   lrc.synclyrics.push_back("\n");
   lrc.synclyrics.push_back("\n");
+
   string prelyrics = "";
   for (unsigned i = 0; i < lrc.synclyrics.size() - 2; i++) {
     prelyrics.append(lrc.synclyrics[i] + "\n");
   }
+
+  // 只在歌曲变化时重新计算 sizelines
   if (track == it) {
-    linessizes = sizelines(track, prelyrics);
+    try {
+      debug_out << "Calculating new sizelines for track change" << std::endl;
+
+      // 确保在主线程中调用sizelines
+      auto result = std::make_shared<std::vector<int>>();
+      auto finished = std::make_shared<std::atomic<bool>>(false);
+
+      Glib::signal_idle().connect_once([track, prelyrics, result, finished]() {
+        try {
+          *result = sizelines(track, prelyrics);
+          *finished = true;
+        } catch (std::exception &e) {
+          debug_out << "Exception in sizelines: " << e.what() << std::endl;
+          *finished = true;
+        }
+      });
+
+      // 等待主线程完成处理（带超时）
+      int timeout_count = 0;
+      while (!*finished && timeout_count < 50) { // 最多等待500ms
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        timeout_count++;
+      }
+
+      if (*finished && !result->empty()) {
+        linessizes = *result;
+        debug_out << "Sizelines calculated successfully" << std::endl;
+      }
+
+    } catch (std::exception &e) {
+      debug_out << "Exception in sizelines wrapper: " << e.what() << std::endl;
+    }
+  } else if (track == it) {
+    debug_out << "Using existing sizelines for same track" << std::endl;
   }
 
   mtx.lock();
@@ -286,6 +317,59 @@ void chopset_lyrics(DB_playItem_t *track, string lyrics) {
   deadbeef->pl_item_unref(it);
   mtx.unlock();
 }
+// Main loop thread caller.
+// void chopset_lyrics(DB_playItem_t *track, const string &lyrics) {
+//   if (!track) {
+//     debug_out << "chopset_lyrics: Invalid track pointer" << std::endl;
+//     return;
+//   }
+//   debug_out << "Chopset lyrics: " << std::endl;
+//   if (lyrics.empty()) {
+//     debug_out << "chopset_lyrics: Empty lyrics" << std::endl;
+//     return;
+//   }
+//   lrc = lyric2vector(lyrics);
+//   DB_playItem_t *it = deadbeef->streamer_get_playing_track();
+//   float length = deadbeef->pl_get_item_duration(it);
+
+//   lrc.position.push_back((float)length - 0.2);
+//   lrc.position.push_back((float)length);
+//   lrc.synclyrics.push_back("\n");
+//   lrc.synclyrics.push_back("\n");
+//   string prelyrics;
+//   prelyrics.reserve(1000);
+//   if (lrc.synclyrics.size() < 2) {
+//     debug_out << "chopset_lyrics: Invalid synclyrics size: "
+//               << lrc.synclyrics.size() << std::endl;
+//     deadbeef->pl_item_unref(it);
+//     return;
+//   }
+//   for (unsigned i = 0; i < lrc.synclyrics.size() - 2; i++) {
+//     if (i < lrc.synclyrics.size()) { // 额外的边界检查
+//       prelyrics += lrc.synclyrics[i] + "\n";
+//     }
+//   }
+//   if (prelyrics.empty()) {
+//     debug_out << "chopset_lyrics: Generated empty prelyrics" << std::endl;
+//     deadbeef->pl_item_unref(it);
+//     return;
+//   }
+//   if (track == it && is_playing(track)) {
+//     try {
+//       debug_out << "Calling sizelines with prelyrics length: "
+//                 << prelyrics.length() << std::endl;
+//       linessizes = sizelines(track, prelyrics);
+//     } catch (const std::exception &e) {
+//       debug_out << "Exception in sizelines: " << e.what() << std::endl;
+//     }
+//   }
+
+//   mtx.lock();
+//   thread t1(thread_listener, it);
+//   t1.detach();
+//   deadbeef->pl_item_unref(it);
+//   mtx.unlock();
+// }
 
 //---------------------------------------------------------------------
 //*********** /Functions to make scroll on sync lyrics. ***************
@@ -641,6 +725,7 @@ void set_info(DB_playItem_t *track) {
 // Main function:
 void update_lyrics(void *tr) {
   linessizes.clear();
+
   DB_playItem_t *track = static_cast<DB_playItem_t *>(tr);
   struct parsed_lyrics meta_lyrics = get_lyrics_from_metadata(track);
   if (meta_lyrics.lyrics != "") {

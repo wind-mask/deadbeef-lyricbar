@@ -43,39 +43,143 @@ bool isValidHexaCode(string str) {
 }
 
 // "Size" lyrics to be able to make lines "dissapear" on top.
+// "Size" lyrics to be able to make lines "dissapear" on top.
 vector<int> sizelines(DB_playItem_t *track, string lyrics) {
+  // 添加输入验证
+  if (!track || lyrics.empty()) {
+    debug_out << "sizelines: Invalid input parameters" << std::endl;
+    return vector<int>{0, 0, 0};
+  }
+
+  // 检查UI组件是否有效
+  if (!lyricView || !refBuffer || !lyricbar) {
+    debug_out << "sizelines: UI components not initialized" << std::endl;
+    return vector<int>{0, 0, 0};
+  }
+
   set_lyrics(track, lyrics, "", "", "");
-  //	std::cout << "Sizelines" << "\n";
+  debug_out << "Sizelines started" << "\n";
   death_signal = 1;
-  int sumatory = 0;
   int temporaly = 0;
   vector<int> values;
 
-  //	I didn't found another way to be sure lyrics are displayed than wait
-  // millisenconds with nanosleep.
-  nanosleep(&tss, NULL);
-  values.push_back(lyricbar->get_allocation().get_height() *
-                   (deadbeef->conf_get_int("lyricbar.vpostion", 50)) / 100);
-  values.push_back(0);
-  Gdk::Rectangle rectangle;
-  for (int i = 2; i < refBuffer->get_line_count() - 1; i++) {
-    lyricView->get_iter_location(refBuffer->get_iter_at_line(i - 2), rectangle);
-    values.push_back(rectangle.get_y() - temporaly);
-    temporaly = rectangle.get_y();
+  // 改进的等待机制：动态等待直到渲染完成
+  int wait_attempts = 0;
+  const int max_wait_attempts = 20;           // 最多等待200ms
+  struct timespec short_wait = {0, 10000000}; // 10ms
+
+  do {
+    nanosleep(&short_wait, NULL);
+    wait_attempts++;
+
+    // 强制处理挂起的事件
+    while (Gtk::Main::events_pending()) {
+      Gtk::Main::iteration(false);
+    }
+
+  } while (wait_attempts < max_wait_attempts &&
+           (!lyricView->get_realized() || refBuffer->get_line_count() <= 1));
+
+  auto allocation = lyricbar->get_allocation();
+  if (allocation.get_height() <= 0) {
+    debug_out << "sizelines: Invalid lyricbar allocation" << std::endl;
+    death_signal = 0;
+    return vector<int>{0, 0, 0};
   }
 
-  values[1] = values.size() - 3;
+  // 改进视口高度计算，增加缓冲区
+  int viewport_height = allocation.get_height() *
+                        (deadbeef->conf_get_int("lyricbar.vpostion", 50)) / 100;
 
-  for (unsigned i = 2; i < values.size() - 2; i++) {
-    sumatory += values[i];
-    if (sumatory > (values[0] - values[3] - values[4])) {
-      values[1] = i - 2;
+  values.push_back(viewport_height);
+  values.push_back(0);
+
+  // 验证buffer的行数
+  int line_count = refBuffer->get_line_count();
+  if (line_count <= 3) {
+    debug_out << "sizelines: Insufficient lines in buffer: " << line_count
+              << std::endl;
+    death_signal = 0;
+    return vector<int>{values[0], 0, 0};
+  }
+
+  Gdk::Rectangle rectangle;
+  vector<int> line_heights; // 存储每行的实际高度
+
+  // 改进的行高计算
+  for (int i = 0; i < line_count; i++) {
+    try {
+      auto iter = refBuffer->get_iter_at_line(i);
+      if (!iter) {
+        debug_out << "sizelines: Invalid iterator for line: " << i << std::endl;
+        continue;
+      }
+
+      lyricView->get_iter_location(iter, rectangle);
+
+      if (i == 0) {
+        temporaly = rectangle.get_y();
+        line_heights.push_back(rectangle.get_height());
+      } else {
+        int current_y = rectangle.get_y();
+        int height_diff = current_y - temporaly;
+
+        // 使用实际行高而不是y差值，提供更准确的计算
+        int actual_height = max(height_diff, rectangle.get_height());
+        line_heights.push_back(actual_height);
+
+        // 跳过标题和艺术家行（前2行），从歌词开始计算
+        if (i >= 2) {
+          values.push_back(actual_height);
+        }
+
+        temporaly = current_y;
+      }
+
+    } catch (const std::exception &e) {
+      debug_out << "sizelines: Exception at line " << i << ": " << e.what()
+                << std::endl;
+      continue;
+    } catch (...) {
+      debug_out << "sizelines: Unknown exception at line " << i << std::endl;
+      continue;
+    }
+  }
+
+  // 验证values数组
+  if (values.size() < 3) {
+    debug_out << "sizelines: Insufficient values calculated" << std::endl;
+    death_signal = 0;
+    return vector<int>{values[0], 0, 0};
+  }
+
+  // 改进的可见行数计算
+  int visible_lines = 0;
+  int accumulated_height = 0;
+  int base_viewport = values[0]; // 减去缓冲区得到实际可视高度
+
+  for (size_t i = 2; i < values.size(); i++) {
+    accumulated_height += values[i];
+    if (accumulated_height <= base_viewport) {
+      visible_lines++;
+    } else {
+      // 部分可见的行也要考虑进去，提供更平滑的滚动
+      float partial_visibility =
+          (float)(base_viewport - (accumulated_height - values[i])) / values[i];
+      if (partial_visibility > 0.3) { // 如果行的30%以上可见，就计算在内
+        visible_lines++;
+      }
       break;
     }
   }
-  //	std::cout << "Sizelines finished" << "\n";
-  death_signal = 0;
 
+  values[1] = max(0, visible_lines - 1); // 确保不会为负数
+
+  debug_out << "Sizelines finished: viewport=" << viewport_height
+            << ", visible_lines=" << visible_lines
+            << ", total_values=" << values.size() << std::endl;
+
+  death_signal = 0;
   return values;
 }
 

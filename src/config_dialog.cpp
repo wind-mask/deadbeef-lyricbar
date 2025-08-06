@@ -1,6 +1,6 @@
 #include "azlyrics.h"
 #include "debug.h"
-// #include "kugou.h"
+#include "kugou.h"
 #include "lrcspotify.h"
 #include "main.h"
 #include "megalobiz.h"
@@ -412,10 +412,9 @@ void on_row_double_clicked(GtkButton *b) {
     selected_lyrics = azlyrics_lyrics_downloader(value);
   } else if (strcmp(provider, "Music163") == 0) {
     selected_lyrics = music163_lyrics_downloader(value);
+  } else if (strcmp(provider, "Kugou") == 0) {
+    selected_lyrics = kugou_lyrics_downloader(value);
   }
-  // } else if (strcmp(provider, "Kugou") == 0) {
-  //   selected_lyrics = kugou_lyrics_downloader(value);
-  // }
 
   gtk_label_set_label(PreViewLyrics, selected_lyrics.lyrics.c_str());
 }
@@ -429,8 +428,8 @@ void thread_listener_fast(string text_song, string text_artist) {
   // debug_out << "thread_listener_fast" <<  text_song.c_str() << ", " <<
   // text_artist.c_str() << std::endl;
 
-  // vector<string> kugou_songs = kugou_get_songs(text_song, text_artist);
-  // populate_tree_view(kugou_songs, "Kugou");
+  vector<string> kugou_songs = kugou_get_songs(text_song, text_artist);
+  populate_tree_view(kugou_songs, "Kugou");
   auto music163_songs = music163_get_songs(text_song, text_artist);
   populate_tree_view(music163_songs, "Music163");
   vector<string> spotify_songs = spotify_get_songs(text_song, text_artist);
@@ -869,14 +868,14 @@ extern "C" int on_button_edit(GtkMenuItem *menuitem, gpointer user_data) {
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(Check_sync), FALSE);
   }
 
-        //	Always on top.
-        gtk_widget_show(GTK_WIDGET(EditWindow));
-        gtk_widget_grab_focus(GTK_WIDGET(EditWindow));
-        gtk_window_set_keep_above(EditWindow, 1);
+  //	Always on top.
+  gtk_widget_show(GTK_WIDGET(EditWindow));
+  gtk_widget_grab_focus(GTK_WIDGET(EditWindow));
+  gtk_window_set_keep_above(EditWindow, 1);
 
-        gtk_main();
+  gtk_main();
 
-        return EXIT_SUCCESS;
+  return EXIT_SUCCESS;
 }
 
 //---------------------------------------------------------------------

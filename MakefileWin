@@ -19,7 +19,7 @@ gtk2: GTK=gtk+-2.0
 gtk2: LYRICBAR=ddb_lyricbar_gtk2.dll
 gtk2: lyricbar
 
-lyricbar: resource.h config_dialog.o lrcspotify.o megalobiz.o azlyrics.o music163.o ui.o base64.o utils.o resources.o main.o
+lyricbar: resource.h config_dialog.o lrcspotify.o megalobiz.o azlyrics.o kugou.o music163.o ui.o base64.o utils.o resources.o main.o
 	$(if $(LYRICBAR),, $(error You should only access this target via "gtk3" or "gtk2"))
 	$(CXX) -shared $(LDFLAGS) main.o resources.o config_dialog.o lrcspotify.o megalobiz.o azlyrics.o music163.o ui.o base64.o utils.o $(LCURL) -o $(LYRICBAR) $(LIBS)
 
@@ -31,6 +31,9 @@ megalobiz.o: src/megalobiz.cpp src/megalobiz.h
 
 azlyrics.o: src/azlyrics.cpp src/azlyrics.h
 	$(CXX) src/azlyrics.cpp -c $(LIBFLAGS) $(CXXFLAGS) -lcurl
+
+kugou.o: src/kugou.cpp src/kugou.h
+	$(CXX) src/kugou.cpp -c $(LIBFLAGS) $(CXXFLAGS) -lcurl
 
 music163.o: src/music163.cpp src/music163.h
 	$(CXX) src/music163.cpp -c $(LIBFLAGS) $(CXXFLAGS) -lcurl
