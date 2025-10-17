@@ -67,3 +67,4 @@ src/resources.h
 .idea
 compile_commands.json
 .cache
+result

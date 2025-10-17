@@ -51,18 +51,25 @@ struct parsed_lyrics music163(std::string artist, std::string song) {
   return lyrics;
 }
 struct parsed_lyrics music163_lyrics_downloader(std::string id) {
-  auto lyrics_url = "https://music.163.com/api/song/media?id=" + id;
+  // auto lyrics_url = "https://music.163.com/api/song/media?id=" + id;
+  auto lyrics_url = "https://music.163.com/api/song/lyric?os=pc&id=" + id +
+                    "&lv=-1&kv=-1&tv=-1";
   auto lyrics_result = text_downloader(nullptr, lyrics_url);
   try {
     auto lyrics_json = json::parse(lyrics_result);
     if (lyrics_json.is_null() || lyrics_json.at("code").get<int>() != 200) {
       return {"", false};
     }
-    auto lyrics = lyrics_json.at("lyric");
-    if (lyrics.is_null() || !lyrics.is_string()) {
+    auto lrcics_json = lyrics_json.at("lrc");
+    if (lrcics_json.is_null()) {
       return {"", false};
     }
-    return {lyrics.get<std::string>(), true};
+    auto lyric = lrcics_json.at("lyric");
+    if (lyric.is_null() || !lyric.is_string()) {
+      return {"", false};
+    }
+
+    return {lyric.get<std::string>(), true};
   } catch (std::exception &e) {
     return {"", false};
   }
