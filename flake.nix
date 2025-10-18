@@ -1,4 +1,3 @@
-
 {
   description = "A deadbeef plugin for displaying lyrics";
 
@@ -7,64 +6,73 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        gtk3 = pkgs.gtk3;
-        gtkmm3 = pkgs.gtkmm3;
-        taglib = pkgs.taglib;
-        curl = pkgs.curl;
-        glib = pkgs.glib;
-        gettext = pkgs.gettext;
-        deadbeef = pkgs.deadbeef;
+
+        # 定义一个函数来构建包，接受 debug 参数
+        mkPackage =
+          debug:
+          pkgs.stdenv.mkDerivation {
+            pname = "deadbeef-lyricbar";
+            version = "git";
+
+            src = self;
+
+            nativeBuildInputs = [
+              pkgs.pkg-config
+              pkgs.gettext
+            ];
+
+            buildInputs = [
+              pkgs.gtk3
+              pkgs.gtkmm3
+              pkgs.taglib
+              pkgs.curl
+              pkgs.glib
+              pkgs.deadbeef
+            ];
+
+            buildPhase = ''
+              runHook preBuild
+
+              glib-compile-resources --generate-header --target=src/resources.h src/resources.xml
+              glib-compile-resources --generate-source --target=src/resources.c src/resources.xml
+
+              ${pkgs.gnumake}/bin/make -j$(nproc) ${if debug then "debug" else "gtk3"}
+
+              runHook postBuild
+            '';
+
+            installPhase = ''
+              runHook preInstall
+
+              install -d $out/lib/deadbeef
+              install -m 644 ddb_lyricbar_gtk3.so $out/lib/deadbeef/
+              install -d $out/share/locale/ru/LC_MESSAGES
+              msgfmt gettext/ru/deadbeef-lyricbar.po -o $out/share/locale/ru/LC_MESSAGES/deadbeef-lyricbar.mo
+
+              runHook postInstall
+            '';
+          };
       in
       {
-        packages.default = pkgs.stdenv.mkDerivation rec {
-          pname = "deadbeef-lyricbar";
-          version = "git";
+        # 默认包（release 模式）
+        packages.default = mkPackage false;
 
-          src = self;
-
-          nativeBuildInputs = [
-            pkgs.pkg-config
-            pkgs.gettext
-          ];
-
-          buildInputs = [
-            gtk3
-            gtkmm3
-            taglib
-            curl
-            glib
-            deadbeef
-          ];
-
-          buildPhase = ''
-            runHook preBuild
-            
-            glib-compile-resources --generate-header --target=src/resources.h src/resources.xml
-            glib-compile-resources --generate-source --target=src/resources.c src/resources.xml
-
-            ${pkgs.gnumake}/bin/make gtk3
-            
-            runHook postBuild
-          '';
-
-          installPhase = ''
-            runHook preInstall
-
-            install -d $out/lib/deadbeef
-            install -m 644 ddb_lyricbar_gtk3.so $out/lib/deadbeef/
-            install -d $out/share/locale/ru/LC_MESSAGES
-            msgfmt gettext/ru/deadbeef-lyricbar.po -o $out/share/locale/ru/LC_MESSAGES/deadbeef-lyricbar.mo
-
-            runHook postInstall
-          '';
-        };
+        # Debug 包
+        packages.debug = mkPackage true;
 
         devShells.default = pkgs.mkShell {
           inputsFrom = [ self.packages.${system}.default ];
         };
-      });
+      }
+    );
 }

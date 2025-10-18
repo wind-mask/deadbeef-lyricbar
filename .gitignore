@@ -68,3 +68,4 @@ src/resources.h
 compile_commands.json
 .cache
 result
+.direnv
